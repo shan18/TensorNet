@@ -1,16 +1,16 @@
 import numpy as np
 
 from data.downloader import download_cifar10
-from data.processing import transformations, data_loader
+from data.processing import Transformations, data_loader
 
 
 class CIFAR10:
     """ Load CIFAR-10 Dataset. """
 
     def __init__(
-        self, train_batch_size=1, val_batch_size=1,
-        cuda=False, num_workers=1, path=None,
-        horizontal_flip=0.0, vertical_flip=0.0, rotation=0.0, random_erasing=0.0
+        self, train_batch_size=1, val_batch_size=1, cuda=False,
+        num_workers=1, path=None, horizontal_flip_prob=0.0,
+        vertical_flip_prob=0.0, rotate_degree=0.0, cutout=0.0
     ):
         """Initializes the dataset for loading.
 
@@ -22,13 +22,15 @@ class CIFAR10:
             path: Path where dataset will be downloaded. Defaults to None.
                 If no path provided, data will be downloaded in a pre-defined
                 directory.
-            horizontal_flip: Probability of an image being horizontally flipped.
+            horizontal_flip_prob: Probability of an image being horizontally flipped.
                 Defaults to 0.
-            vertical_flip: Probability of an image being vertically flipped.
+            vertical_flip_prob: Probability of an image being vertically flipped.
                 Defaults to 0.
-            rotation: Angle of rotation for image augmentation.
+            rotate_prob: Probability of an image being rotated.
                 Defaults to 0.
-            random_erasing: Probability that random erase will be performed.
+            rotate_degree: Angle of rotation for image augmentation.
+                Defaults to 0.
+            cutout: Probability that cutout will be performed.
                 Defaults to 0.
         """
         
@@ -45,10 +47,10 @@ class CIFAR10:
         )
 
         # Set data augmentation parameters
-        self.horizontal_flip = horizontal_flip
-        self.vertical_flip = vertical_flip
-        self.rotation = rotation
-        self.random_erasing = random_erasing
+        self.horizontal_flip_prob = horizontal_flip_prob
+        self.vertical_flip_prob = vertical_flip_prob
+        self.rotate_degree = rotate_degree
+        self.cutout = cutout
 
         # Set transforms
         self.train_transform = self._transform()
@@ -68,12 +70,12 @@ class CIFAR10:
         Returns:
             Returns data transforms based on the training mode.
         """
-        return transformations(
-            horizontal_flip=self.horizontal_flip,
-            vertical_flip=self.vertical_flip,
-            rotation=self.rotation,
-            random_erasing=self.random_erasing
-        ) if train else transformations()
+        return Transformations(
+            horizontal_flip_prob=self.horizontal_flip_prob,
+            vertical_flip_prob=self.vertical_flip_prob,
+            rotate_degree=self.rotate_degree,
+            cutout=self.cutout
+        ) if train else Transformations()
     
     def _download(self, train=True):
         """Download dataset.
