@@ -5,3 +5,4 @@ torchsummary==1.5.1
 tqdm==4.43.0
 matplotlib==3.1.2
 albumentations==0.4.5
+opencv-python==4.1.2.30
