@@ -62,6 +62,7 @@ def plot_predictions(data, classes, plot_title, plot_path):
     Args:
         data: List of images, model predictions and ground truths.
         classes: List of classes in the dataset.
+        plot_title: Title for the plot.
         plot_path: Complete path for saving the plot.
     """
 
