@@ -81,10 +81,12 @@ class CIFAR10:
 
         args = {
             'mean': self.mean,
-            'std': self.std
+            'std': self.std,
+            'train': False
         }
 
         if train:
+            args['train'] = True
             args['horizontal_flip_prob'] = self.horizontal_flip_prob
             args['vertical_flip_prob'] = self.vertical_flip_prob
             args['rotate_degree'] = self.rotate_degree
@@ -137,7 +139,7 @@ class CIFAR10:
         """
 
         if type(image) == torch.Tensor:
-            image = np.transpose(image.numpy(), (1, 2, 0))
+            image = np.transpose(image.clone().numpy(), (1, 2, 0))
 
         return unnormalize(image, self.mean, self.std)
     

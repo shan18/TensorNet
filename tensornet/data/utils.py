@@ -14,4 +14,4 @@ def unnormalize(image, mean, std):
             a tuple with 3 values (one for each channel).
     """
 
-    return image * mean - std
+    return image * std + mean

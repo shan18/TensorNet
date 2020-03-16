@@ -10,7 +10,7 @@ class Transformations:
     def __init__(
         self, horizontal_flip_prob=0.0, vertical_flip_prob=0.0,
         rotate_degree=0.0, cutout=0.0, cutout_height=0, cutout_width=0,
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), train=True
     ):
         """Create data transformation pipeline
         
@@ -30,18 +30,22 @@ class Transformations:
             mean: Mean value. Defaults to 0.5 for each channel.
             std: Standard deviation value. Defaults to 0.5 for each channel.
         """
+        transforms_list = []
 
-        self.transform = A.Compose([
-            A.HorizontalFlip(p=horizontal_flip_prob),  # Horizontal Flip
-            A.VerticalFlip(p=vertical_flip_prob),  # Vertical Flip
-            A.Rotate(limit=rotate_degree),  # Rotate image
+        if train:
+            transforms_list += [
+                A.HorizontalFlip(p=horizontal_flip_prob),  # Horizontal Flip
+                A.VerticalFlip(p=vertical_flip_prob),  # Vertical Flip
+                A.Rotate(limit=rotate_degree),  # Rotate image
 
-            # CutOut
-            A.CoarseDropout(
-                p=cutout, max_holes=1, fill_value=tuple(255 * x for x in mean),
-                max_height=cutout_height, max_width=cutout_width, min_height=1, min_width=1
-            ),
-
+                # CutOut
+                A.CoarseDropout(
+                    p=cutout, max_holes=1, fill_value=tuple(255 * x for x in mean),
+                    max_height=cutout_height, max_width=cutout_width, min_height=1, min_width=1
+                )
+            ]
+        
+        transforms_list += [
             # normalize the data with mean and standard deviation to keep values in range [-1, 1]
             # since there are 3 channels for each image,
             # we have to specify mean and std for each channel
@@ -49,8 +53,10 @@ class Transformations:
 
             # convert the data to torch.FloatTensor
             # with values within the range [0.0 ,1.0]
-            ToTensor(),
-        ])
+            ToTensor()
+        ]
+
+        self.transform = A.Compose(transforms_list)
     
     def __call__(self, image):
         """Process and image through the data transformation pipeline.
