@@ -3,7 +3,7 @@ import numpy as np
 
 from data.downloader import download_cifar10
 from data.processing import Transformations, data_loader
-from dataset.utils import unnormalize
+from data.utils import unnormalize
 
 
 class CIFAR10:
