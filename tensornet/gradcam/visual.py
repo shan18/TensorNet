@@ -1,6 +1,8 @@
 import cv2
 import torch
 
+import matplotlib.pyplot as plt
+
 from .gradcam import GradCAM
 from .gradcam_pp import GradCAMPP
 from data.utils import to_numpy
@@ -39,9 +41,7 @@ def plot_cam(data, plot_path):
     """
 
     # Initialize plot
-    fig, axs = plt.subplots(5, 5, figsize=(10, 10))
-
-    img_idx = random.sample(range(len(data)), 5)
+    fig, axs = plt.subplots(len(data), 5, figsize=(10, 10))
 
     for idx, cam in enumerate(data):
         axs[idx][0].axis('off')
@@ -53,15 +53,15 @@ def plot_cam(data, plot_path):
         if idx == 0:
             axs[idx][0].set_title('Input')
             axs[idx][1].set_title('GradCAM Heatmap')
-            axs[idx][2].set_title('GradCAM++ Heatmap')
-            axs[idx][3].set_title('GradCAM Result')
+            axs[idx][2].set_title('GradCAM Result')
+            axs[idx][3].set_title('GradCAM++ Heatmap')
             axs[idx][4].set_title('GradCAM++ Result')
 
         # Plot image
         axs[idx][0].imshow(cam['image'])
         axs[idx][1].imshow(cam['cam_heatmap'])
-        axs[idx][2].imshow(cam['campp_heatmap'])
-        axs[idx][3].imshow(cam['cam_result'])
+        axs[idx][2].imshow(cam['cam_result'])
+        axs[idx][3].imshow(cam['campp_heatmap'])
         axs[idx][4].imshow(cam['campp_result'])
     
     # Set spacing
