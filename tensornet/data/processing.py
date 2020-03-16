@@ -27,7 +27,10 @@ class Transformations:
             A.Rotate(limit=rotate_degree),  # Rotate image
 
             # CutOut
-            A.Cutout(p=cutout, num_holes=1, max_h_size=16, max_w_size=16),
+            A.CoarseDropout(
+                p=cutout, max_holes=1, fill_value=(0.5 * 255, 0.5 * 255, 0.5 * 255),
+                max_height=16, max_width=16, min_height=1, min_width=1
+            ),
 
             # normalize the data with mean and standard deviation to keep values in range [-1, 1]
             # since there are 3 channels for each image,
