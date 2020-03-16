@@ -7,7 +7,11 @@ from albumentations.pytorch import ToTensor
 class Transformations:
     """ Wrapper class to pass on albumentaions transforms into PyTorch. """
 
-    def __init__(self, horizontal_flip_prob=0.0, vertical_flip_prob=0.0, rotate_degree=0.0, cutout=0.0):
+    def __init__(
+        self, horizontal_flip_prob=0.0, vertical_flip_prob=0.0,
+        rotate_degree=0.0, cutout=0.0, cutout_height=0, cutout_width=0,
+        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+    ):
         """Create data transformation pipeline
         
         Args:
@@ -19,6 +23,12 @@ class Transformations:
                 Defaults to 0.
             cutout: Probability that cutout will be performed.
                 Defaults to 0.
+            cutout_height: Max height of the cutout box.
+                Defaults to 0.
+            cutout_width: Max width of the cutout box.
+                Defaults to 0.
+            mean: Mean value. Defaults to 0.5 for each channel.
+            std: Standard deviation value. Defaults to 0.5 for each channel.
         """
 
         self.transform = A.Compose([
@@ -28,14 +38,14 @@ class Transformations:
 
             # CutOut
             A.CoarseDropout(
-                p=cutout, max_holes=1, fill_value=(0.5 * 255, 0.5 * 255, 0.5 * 255),
-                max_height=16, max_width=16, min_height=1, min_width=1
+                p=cutout, max_holes=1, fill_value=tuple(255 * x for x in mean),
+                max_height=cutout_height, max_width=cutout_width, min_height=1, min_width=1
             ),
 
             # normalize the data with mean and standard deviation to keep values in range [-1, 1]
             # since there are 3 channels for each image,
             # we have to specify mean and std for each channel
-            A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), always_apply=True),
+            A.Normalize(mean=mean, std=std, always_apply=True),
 
             # convert the data to torch.FloatTensor
             # with values within the range [0.0 ,1.0]

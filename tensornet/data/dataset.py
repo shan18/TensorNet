@@ -1,7 +1,9 @@
+import torch
 import numpy as np
 
 from data.downloader import download_cifar10
 from data.processing import Transformations, data_loader
+from dataset.utils import unnormalize
 
 
 class CIFAR10:
@@ -52,13 +54,19 @@ class CIFAR10:
         self.rotate_degree = rotate_degree
         self.cutout = cutout
 
-        # Set transforms
-        self.train_transform = self._transform()
-        self.val_transform = self._transform(train=False)
+        # Set mean and standard deviation
+        self.mean = (0.5, 0.5, 0.5)
+        self.std = (0.5, 0.5, 0.5)
 
-        # Download dataset
-        self.train_data = self._download()
+        # Set validation data
+        # Validation data is fetched first in order to
+        # get the image size which will be needed in cutout
+        self.val_transform = self._transform(train=False)
         self.val_data = self._download(train=False)
+
+        # Set training data
+        self.train_transform = self._transform()
+        self.train_data = self._download()
     
     def _transform(self, train=True):
         """Define data transformations
@@ -70,12 +78,21 @@ class CIFAR10:
         Returns:
             Returns data transforms based on the training mode.
         """
-        return Transformations(
-            horizontal_flip_prob=self.horizontal_flip_prob,
-            vertical_flip_prob=self.vertical_flip_prob,
-            rotate_degree=self.rotate_degree,
-            cutout=self.cutout
-        ) if train else Transformations()
+
+        args = {
+            'mean': self.mean,
+            'std': self.std
+        }
+
+        if train:
+            args['horizontal_flip_prob'] = self.horizontal_flip_prob
+            args['vertical_flip_prob'] = self.vertical_flip_prob
+            args['rotate_degree'] = self.rotate_degree
+            args['cutout'] = self.cutout
+            args['cutout_height'] = self.image_size[0] // 2
+            args['cutout_width'] = self.image_size[1] // 2
+
+        return Transformations(**args)
     
     def _download(self, train=True):
         """Download dataset.
@@ -89,6 +106,7 @@ class CIFAR10:
         transform = self.train_transform if train else self.val_transform
         return download_cifar10(self.path, train=train, transform=transform)
     
+    @property
     def classes(self):
         """ Return list of classes in the dataset. """
         return self.class_values
@@ -105,9 +123,23 @@ class CIFAR10:
         data = self.train_data if train else self.val_data
         return data.data, data.targets
     
+    @property
     def image_size(self):
         """ Return shape of data i.e. image size. """
-        return np.transpose(self.data()[0][0], (2, 0, 1)).shape
+        return np.transpose(self.data(train=False)[0][0], (2, 0, 1)).shape
+    
+    def unnormalize(self, image):
+        """Un-normalize a given image.
+
+        Args:
+            image: A 3-D ndarray or 3-D tensor.
+                If tensor, it should be in CPU.
+        """
+
+        if type(image) == torch.Tensor:
+            image = np.transpose(image.numpy(), (1, 2, 0))
+
+        return unnormalize(image, self.mean, self.std)
     
     def loader(self, train=True):
         """Create data loader.
