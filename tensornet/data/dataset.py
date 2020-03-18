@@ -12,7 +12,8 @@ class CIFAR10:
     def __init__(
         self, train_batch_size=1, val_batch_size=1, cuda=False,
         num_workers=1, path=None, horizontal_flip_prob=0.0,
-        vertical_flip_prob=0.0, rotate_degree=0.0, cutout=0.0
+        vertical_flip_prob=0.0, gaussian_blur_prob=0.0,
+        rotate_degree=0.0, cutout=0.0
     ):
         """Initializes the dataset for loading.
 
@@ -51,22 +52,22 @@ class CIFAR10:
         # Set data augmentation parameters
         self.horizontal_flip_prob = horizontal_flip_prob
         self.vertical_flip_prob = vertical_flip_prob
+        self.gaussian_blur_prob = gaussian_blur_prob
         self.rotate_degree = rotate_degree
         self.cutout = cutout
 
-        # Set mean and standard deviation
-        self.mean = (0.5, 0.5, 0.5)
-        self.std = (0.5, 0.5, 0.5)
-
-        # Set validation data
-        # Validation data is fetched first in order to
-        # get the image size which will be needed in cutout
-        self.val_transform = self._transform(train=False)
-        self.val_data = self._download(train=False)
+        # Download sample data
+        # This is done to get the image size
+        # and mean and std of the dataset
+        self.sample_data = self._download(apply_transform=False)
 
         # Set training data
         self.train_transform = self._transform()
         self.train_data = self._download()
+
+        # Set validation data
+        self.val_transform = self._transform(train=False)
+        self.val_data = self._download(train=False)
     
     def _transform(self, train=True):
         """Define data transformations
@@ -89,29 +90,46 @@ class CIFAR10:
             args['train'] = True
             args['horizontal_flip_prob'] = self.horizontal_flip_prob
             args['vertical_flip_prob'] = self.vertical_flip_prob
+            args['gaussian_blur_prob'] = self.gaussian_blur_prob
             args['rotate_degree'] = self.rotate_degree
             args['cutout'] = self.cutout
-            args['cutout_height'] = self.image_size[0] // 2
-            args['cutout_width'] = self.image_size[1] // 2
+            args['cutout_height'] = self.image_size[1] // 2
+            args['cutout_width'] = self.image_size[2] // 2
 
         return Transformations(**args)
     
-    def _download(self, train=True):
+    def _download(self, train=True, apply_transform=True):
         """Download dataset.
 
         Args:
             train: True for training data.
+            apply_transform: True if transform is to be applied on the data.
         
         Returns:
             Downloaded dataset.
         """
-        transform = self.train_transform if train else self.val_transform
+        transform = None
+        if apply_transform:
+            transform = self.train_transform if train else self.val_transform
         return download_cifar10(self.path, train=train, transform=transform)
     
     @property
     def classes(self):
         """ Return list of classes in the dataset. """
         return self.class_values
+    
+    @property
+    def image_size(self):
+        """ Return shape of data i.e. image size. """
+        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
+    
+    @property
+    def mean(self):
+        return tuple(np.mean(self.sample_data.data, axis=(0, 1, 2)) / 255)
+    
+    @property
+    def std(self):
+        return tuple(np.std(self.sample_data.data, axis=(0, 1, 2)) / 255)
     
     def data(self, train=True):
         """ Return data based on train mode.
@@ -125,23 +143,14 @@ class CIFAR10:
         data = self.train_data if train else self.val_data
         return data.data, data.targets
     
-    @property
-    def image_size(self):
-        """ Return shape of data i.e. image size. """
-        return np.transpose(self.data(train=False)[0][0], (2, 0, 1)).shape
-    
-    def unnormalize(self, image):
+    def unnormalize(self, image, out_type='array'):
         """Un-normalize a given image.
 
         Args:
             image: A 3-D ndarray or 3-D tensor.
                 If tensor, it should be in CPU.
         """
-
-        if type(image) == torch.Tensor:
-            image = np.transpose(image.clone().numpy(), (1, 2, 0))
-
-        return unnormalize(image, self.mean, self.std)
+        return unnormalize(image, self.mean, self.std, out_type)
     
     def loader(self, train=True):
         """Create data loader.
