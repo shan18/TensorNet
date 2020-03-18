@@ -6,7 +6,7 @@ class BaseNet(nn.Module):
     def __init__(self, dropout_rate):
         """ This function instantiates all the model layers """
 
-        super(Net, self).__init__()
+        super(BaseNet, self).__init__()
 
         self.convblock1 = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),  # Input: 32x32x3 | Output: 32x32x32 | RF: 3x3

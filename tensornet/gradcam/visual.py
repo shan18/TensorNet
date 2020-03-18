@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from .gradcam import GradCAM
 from .gradcam_pp import GradCAMPP
-from data.utils import to_numpy
+from data.utils import to_numpy, unnormalize
 
 
 def visualize_cam(mask, img, alpha=1.0):
@@ -32,76 +32,138 @@ def visualize_cam(mask, img, alpha=1.0):
     return heatmap, result
 
 
-def plot_cam(data, plot_path):
-    """Display data.
+class GradCAMView:
 
-    Args:
-        data: List of images, heatmaps and result.
-        plot_path: Complete path for saving the plot.
-    """
+    def __init__(self, model, layers, device, mean, std):
+        """Instantiate GradCAM and GradCAM++.
 
-    # Initialize plot
-    fig, axs = plt.subplots(len(data), 5, figsize=(10, 10))
+        Args:
+            model: Trained model.
+            layers: List of layers to show GradCAM on.
+            device: GPU or CPU.
+            mean: Mean of the dataset.
+            std: Standard Deviation of the dataset.
+        """
+        self.model = model
+        self.layers = layers
+        self.device = device
+        self.mean = mean
+        self.std = std
 
-    for idx, cam in enumerate(data):
-        axs[idx][0].axis('off')
-        axs[idx][1].axis('off')
-        axs[idx][2].axis('off')
-        axs[idx][3].axis('off')
-        axs[idx][4].axis('off')
+        self._gradcam()
+        self._gradcam_pp()
 
-        if idx == 0:
-            axs[idx][0].set_title('Input')
-            axs[idx][1].set_title('GradCAM Heatmap')
-            axs[idx][2].set_title('GradCAM Result')
-            axs[idx][3].set_title('GradCAM++ Heatmap')
-            axs[idx][4].set_title('GradCAM++ Result')
+        print('Mode set to GradCAM.')
+        self.grad = self.gradcam.copy()
 
-        # Plot image
-        axs[idx][0].imshow(cam['image'])
-        axs[idx][1].imshow(cam['cam_heatmap'])
-        axs[idx][2].imshow(cam['cam_result'])
-        axs[idx][3].imshow(cam['campp_heatmap'])
-        axs[idx][4].imshow(cam['campp_result'])
+        self.views = []
+
+    def _gradcam(self):
+        """ Initialize GradCAM instance. """
+        self.gradcam = {}
+        for layer in self.layers:
+            self.gradcam[layer] = GradCAM(self.model, layer)
     
-    # Set spacing
-    fig.tight_layout()
+    def _gradcam_pp(self):
+        """ Initialize GradCAM++ instance. """
+        self.gradcam_pp = {}
+        for layer in self.layers:
+            self.gradcam_pp[layer] = GradCAMPP(self.model, layer)
+    
+    def switch_mode(self):
+        if self.grad == self.gradcam:
+            print('Mode switched to GradCAM++.')
+            self.grad = self.gradcam_pp.copy()
+        else:
+            print('Mode switched to GradCAM.')
+            self.grad = self.gradcam.copy()
+    
+    def _cam_image(self, norm_image):
+        """Get CAM for an image.
 
-    # Save image
-    fig.savefig(f'{plot_path}', bbox_inches='tight')
+        Args:
+            norm_image: Normalized image. Should be of type
+                torch.Tensor
+        
+        Returns:
+            Dictionary containing unnormalized image, heatmap and CAM result.
+        """
+        norm_image_cuda = norm_image.clone().unsqueeze_(0).to(self.device)
+        heatmap, result = {}, {}
+        for layer, gc in self.gradcam.items():
+            mask, _ = gc(norm_image_cuda)
+            cam_heatmap, cam_result = visualize_cam(
+                mask,
+                unnormalize(norm_image, self.mean, self.std, out_type='tensor').clone().unsqueeze_(0).to(self.device)
+            )
+            heatmap[layer], result[layer] = to_numpy(cam_heatmap), to_numpy(cam_result)
+        return {
+            'image': unnormalize(norm_image, self.mean, self.std),
+            'heatmap': heatmap,
+            'result': result
+        }
+    
+    def _plot_view(self, view, fig, row_num, ncols, metric):
+        """Plot a CAM view.
 
+        Args:
+            view: Dictionary containing image, heatmap and result.
+            fig: Matplotlib figure instance.
+            row_num: Row number of the subplot.
+            ncols: Total number of columns in the subplot.
+            metric: Can be one of ['heatmap', 'result'].
+        """
+        sub = fig.add_subplot(row_num, ncols, 1)
+        sub.axis('off')
+        plt.imshow(view['image'])
+        sub.set_title(f'{metric.title()}:')
+        for idx, layer in enumerate(self.layers):
+            sub = fig.add_subplot(row_num, ncols, idx + 2)
+            sub.axis('off')
+            plt.imshow(view[metric][layer])
+            sub.set_title(layer)
+    
+    def cam(self, norm_image_list):
+        """Get CAM for a list of images.
 
-def display_cam(model, device, samples, unnormalize, plot_path):
-    """ Given a set of images, display CAM for each of them.
-        Also save the generated image.
+        Args:
+            norm_image_list: List of normalized images. Each image
+                should be of type torch.Tensor
+        """
+        for norm_image in norm_image_list:
+            self.views.append(self._cam_image(norm_image))
+    
+    def plot(self, plot_path):
+        """Plot heatmap and CAM result.
 
-    Args:
-        model: Trained model.
-        samples: List of images in torch.Tensor format.
-        plot_path: Path to store the generated image.
-    """
+        Args:
+            plot_path: Path to save the plot.
+        """
 
-    # Initialize GradCAM
-    gradcam = GradCAM(model, 'layer4')
-    gradcam_pp = GradCAMPP(model, 'layer4')
+        for idx, view in enumerate(self.views):
+            # Initialize plot
+            fig = plt.figure(figsize=(10, 10))
 
-    images = []
-    for sample in samples:
-        norm_image = sample.clone().unsqueeze_(0).to(device)
-        image = unnormalize(sample)
+            # Plot view
+            self._plot_view(view, fig, 1, len(self.layers) + 1, 'heatmap')
+            self._plot_view(view, fig, 2, len(self.layers) + 1, 'result')
+            
+            # Set spacing and display
+            fig.tight_layout()
+            plt.show()
 
-        mask, _ = gradcam(norm_image)
-        heatmap, result = visualize_cam(mask, norm_image)
+            # Save image
+            fig.savefig(f'{plot_path}_{idx + 1}.png', bbox_inches='tight')
 
-        mask_pp, _ = gradcam_pp(norm_image)
-        heatmap_pp, result_pp = visualize_cam(mask_pp, norm_image)
+            # Clear cache
+            plt.clf()
+    
+    def __call__(self, norm_image_list, plot_path):
+        """Get GradCAM for a list of images.
 
-        images.append({
-            'image': image,
-            'cam_heatmap': to_numpy(heatmap),
-            'cam_result': to_numpy(result),
-            'campp_heatmap': to_numpy(heatmap_pp),
-            'campp_result': to_numpy(result_pp)
-        })
-
-    plot_cam(images, plot_path)
+        Args:
+            norm_image_list: List of normalized images. Each image
+                should be of type torch.Tensor
+        """
+        self.cam(norm_image_list)
+        self.plot(plot_path)
