@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 
-from data.downloader import download_cifar10
-from data.processing import Transformations, data_loader
-from data.utils import unnormalize
+from tensornet.data.downloader import download_cifar10
+from tensornet.data.processing import Transformations, data_loader
+from tensornet.data.utils import unnormalize
 
 
 class CIFAR10:

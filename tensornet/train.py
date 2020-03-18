@@ -1,7 +1,7 @@
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from model.utils.regularizer import l1
+from tensornet.model.utils.regularizer import l1
 
 
 def train(model, loader, device, optimizer, criterion, l1_factor=0.0):

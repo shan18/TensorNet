@@ -3,9 +3,9 @@ import torch
 
 import matplotlib.pyplot as plt
 
-from .gradcam import GradCAM
-from .gradcam_pp import GradCAMPP
-from data.utils import to_numpy, unnormalize
+from tensornet.gradcam.gradcam import GradCAM
+from tensornet.gradcam.gradcam_pp import GradCAMPP
+from tensornet.data.utils import to_numpy, unnormalize
 
 
 def visualize_cam(mask, img, alpha=1.0):
@@ -71,6 +71,7 @@ class GradCAMView:
             self.gradcam_pp[layer] = GradCAMPP(self.model, layer)
     
     def switch_mode(self):
+        """ Switch between GradCAM and GradCAM++. """
         if self.grad == self.gradcam:
             print('Mode switched to GradCAM++.')
             self.grad = self.gradcam_pp.copy()
