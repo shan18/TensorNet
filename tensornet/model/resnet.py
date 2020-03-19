@@ -21,6 +21,15 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
+        """This function defines the forward pass of the basic block.
+
+        Args:
+            x: Input.
+        
+        Returns:
+            Block output.
+        """
+
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
@@ -29,6 +38,7 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
+
     def __init__(self, block, num_blocks, num_classes=10):
         super(ResNet, self).__init__()
         self.in_planes = 64
@@ -50,6 +60,15 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        """This function defines the forward pass of the model.
+
+        Args:
+            x: Input.
+        
+        Returns:
+            Model output.
+        """
+
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)

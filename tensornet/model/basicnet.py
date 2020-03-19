@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 
-class BaseNet(nn.Module):
+class BasicNet(nn.Module):
 
     def __init__(self, dropout_rate):
         """ This function instantiates all the model layers """
@@ -83,7 +83,14 @@ class BaseNet(nn.Module):
         )
     
     def forward(self, x):
-        """ This function defines the network structure """
+        """This function defines the forward pass of the model.
+
+        Args:
+            x: Input.
+        
+        Returns:
+            Model output.
+        """
 
         x = self.convblock1(x)
         x = self.transblock1(x)
