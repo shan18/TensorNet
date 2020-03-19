@@ -1,2 +1,2 @@
-from .basenet import BaseNet
+from .basicnet import BasicNet
 from .resnet import ResNet18
