@@ -13,10 +13,10 @@ def requirements():
 
 setup(
     name='torch-tensornet',
-    version='0.0.1',
+    version='0.0.1a',
     author='Shantanu Acharya',
     author_email='thegeek.004@gmail.com',
-    description='A high-level deep learning library build on top of PyTorch',
+    description='A high-level deep learning library build on top of PyTorch.',
     long_description=readme(),
     long_description_content_type='text/markdown',
     url='https://github.com/shan18/TensorNet',
