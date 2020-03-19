@@ -1,4 +1,14 @@
+import os
+import re
 from setuptools import setup, find_packages
+
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+def version():
+    with open(os.path.join(base_dir, 'tensornet', '__init__.py')) as f:
+        return re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', f.read(), re.M).group(1)
 
 
 def readme():
@@ -13,7 +23,7 @@ def requirements():
 
 setup(
     name='torch-tensornet',
-    version='0.0.1a',
+    version=version(),
     author='Shantanu Acharya',
     author_email='thegeek.004@gmail.com',
     description='A high-level deep learning library build on top of PyTorch.',
@@ -28,5 +38,6 @@ setup(
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.6',
+    include_package_data=True,
     install_requires=requirements()
 )

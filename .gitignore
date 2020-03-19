@@ -4,6 +4,7 @@
 __pycache__/
 *.pyc
 *.swp
+pypi_upload.sh
 
 # Distribution / packaging
 bin/
