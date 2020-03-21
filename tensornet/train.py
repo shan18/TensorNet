@@ -4,7 +4,10 @@ from tqdm import tqdm
 from tensornet.model.utils.regularizer import l1
 
 
-def train(model, loader, device, optimizer, criterion, l1_factor=0.0):
+def train(
+    model, loader, device, optimizer, criterion,
+    losses=None, accuracies=None, track='epoch', l1_factor=0.0
+):
     """Train the model.
 
     Args:
@@ -13,6 +16,13 @@ def train(model, loader, device, optimizer, criterion, l1_factor=0.0):
         loader: Training data loader.
         optimizer: Optimizer for the model.
         criterion: Loss Function.
+        losses: List containing the change in loss.
+            Default is None.
+        accuracies: List containing the change in accuracy.
+            Default is None.
+        track: Can be set to either 'epoch' or 'batch' and will
+            store the changes in loss and accuracy for each batch
+            or the entire epoch respectively. Defaults to 'epoch'.
         l1_factor: L1 regularization factor.
     """
 
@@ -41,6 +51,21 @@ def train(model, loader, device, optimizer, criterion, l1_factor=0.0):
         pred = y_pred.argmax(dim=1, keepdim=True)
         correct += pred.eq(target.view_as(pred)).sum().item()
         processed += len(data)
+
+        if track == 'batch':  # Store loss and accuracy
+            batch_accuracy = 100 * correct / processed
+            if not losses is None:
+                losses.append(loss.item())
+            if not accuracies is None:
+                accuracies.append(batch_accuracy)
+
         pbar.set_description(
             desc=f'Loss={loss.item():0.2f} Batch_ID={batch_idx} Accuracy={(100 * correct / processed):.2f}'
         )
+
+    if track == 'epoch':  # Store loss and accuracy
+        accuracy = 100 * correct / processed
+        if not losses is None:
+            losses.append(loss.item())
+        if not accuracies is None:
+            accuracies.append(accuracy)
