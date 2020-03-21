@@ -35,22 +35,47 @@ def class_level_accuracy(model, loader, device, classes):
         print('Accuracy of %5s : %2d %%' % (classes[i], 100 * class_correct[i] / class_total[i]))
 
 
-def plot_metric(values, metric):
+def plot_metric(data, metric):
+    """Plot accuracy graph or loss graph.
+
+    Args:
+        data: If only single plot then this is a list, else
+            for multiple plots this is a dict with keys containing
+            the plot name and values being a list of points to plot.
+        metric: Metric name which is to be plotted. Can be either
+            loss or accuracy.
+    """
+
+    single_plot = True
+    if type(data) == dict:
+        single_plot = False
+    
     # Initialize a figure
     fig = plt.figure(figsize=(7, 5))
 
-    # Plot values
-    plt.plot(values)
+    # Plot data
+    if single_plot:
+        plt.plot(data)
+    else:
+        plots = []
+        for value in data.values():
+            plots.append(plt.plot(value)[0])
 
     # Set plot title
-    plt.title(f'Validation {metric}')
+    plt.title(f'{metric} Change')
 
     # Label axes
     plt.xlabel('Epoch')
     plt.ylabel(metric)
 
-    # Set legend
-    location = 'upper' if metric == 'Loss' else 'lower'
+    if not single_plot: # Set legend
+        location = 'upper' if metric == 'Loss' else 'lower'
+        plt.legend(
+            tuple(plots), tuple(data.keys()),
+            loc=f'{location} right',
+            shadow=True,
+            prop={'size': 15}
+        )
 
     # Save plot
     fig.savefig(f'{metric.lower()}_change.png')
