@@ -79,7 +79,7 @@ class GradCAMView:
             print('Mode switched to GradCAM.')
             self.grad = self.gradcam.copy()
     
-    def _cam_image(self, norm_image):
+    def _cam_image(self, norm_image, class_idx=None):
         """Get CAM for an image.
 
         Args:
@@ -92,7 +92,7 @@ class GradCAMView:
         norm_image_cuda = norm_image.clone().unsqueeze_(0).to(self.device)
         heatmap, result = {}, {}
         for layer, gc in self.gradcam.items():
-            mask, _ = gc(norm_image_cuda)
+            mask, _ = gc(norm_image_cuda, class_idx=class_idx)
             cam_heatmap, cam_result = visualize_cam(
                 mask,
                 unnormalize(norm_image, self.mean, self.std, out_type='tensor').clone().unsqueeze_(0).to(self.device)
@@ -104,62 +104,25 @@ class GradCAMView:
             'result': result
         }
     
-    def _plot_view(self, view, fig, row_num, ncols, metric):
-        """Plot a CAM view.
-
-        Args:
-            view: Dictionary containing image, heatmap and result.
-            fig: Matplotlib figure instance.
-            row_num: Row number of the subplot.
-            ncols: Total number of columns in the subplot.
-            metric: Can be one of ['heatmap', 'result'].
-        """
-        sub = fig.add_subplot(row_num, ncols, 1)
-        sub.axis('off')
-        plt.imshow(view['image'])
-        sub.set_title(f'{metric.title()}:')
-        for idx, layer in enumerate(self.layers):
-            sub = fig.add_subplot(row_num, ncols, idx + 2)
-            sub.axis('off')
-            plt.imshow(view[metric][layer])
-            sub.set_title(layer)
-    
-    def cam(self, norm_image_list):
+    def cam(self, norm_img_class_list):
         """Get CAM for a list of images.
 
         Args:
-            norm_image_list: List of normalized images. Each image
-                should be of type torch.Tensor
+            norm_img_class_list: List of dictionaries. Each dict contains
+                keys 'image' and 'class' having values 'normalized_image'
+                and 'class_idx' respectively. class_idx is optional.
+                If class_idx is not given then the model prediction
+                will be used and the parameter should just be a list of
+                images. Each image should be of type torch.Tensor
         """
-        for norm_image in norm_image_list:
-            self.views.append(self._cam_image(norm_image))
+        for norm_image_class in norm_img_class_list:
+            class_idx = None
+            norm_image = norm_image_class
+            if type(norm_image_class) == dict:
+                class_idx, norm_image = norm_image_class['class'], norm_image_class['image']
+            self.views.append(self._cam_image(norm_image, class_idx=class_idx))
     
-    def plot(self, plot_path):
-        """Plot heatmap and CAM result.
-
-        Args:
-            plot_path: Path to save the plot.
-        """
-
-        for idx, view in enumerate(self.views):
-            # Initialize plot
-            fig = plt.figure(figsize=(10, 10))
-
-            # Plot view
-            self._plot_view(view, fig, 1, len(self.layers) + 1, 'heatmap')
-            self._plot_view(view, fig, 2, len(self.layers) + 1, 'result')
-            
-            # Set spacing and display
-            fig.tight_layout()
-            plt.show()
-
-            # Save image
-            fig.savefig(f'{plot_path}_{idx + 1}.png', bbox_inches='tight')
-
-            # Clear cache
-            plt.clf()
-    
-    def __call__(self, norm_image_list, plot_path):
+    def __call__(self, norm_image_list):
         """Get GradCAM for a list of images.
 
         Args:
@@ -167,4 +130,4 @@ class GradCAMView:
                 should be of type torch.Tensor
         """
         self.cam(norm_image_list)
-        self.plot(plot_path)
+        return self.views
