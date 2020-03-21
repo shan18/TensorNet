@@ -3,7 +3,7 @@ import numpy as np
 
 from tensornet.data.downloader import download_cifar10
 from tensornet.data.processing import Transformations, data_loader
-from tensornet.data.utils import unnormalize
+from tensornet.data.utils import unnormalize, normalize
 
 
 class CIFAR10:
@@ -151,6 +151,15 @@ class CIFAR10:
                 If tensor, it should be in CPU.
         """
         return unnormalize(image, self.mean, self.std, out_type)
+    
+    def normalize(self, image, out_type='array'):
+        """Normalize a given image.
+
+        Args:
+            image: A 3-D ndarray or 3-D tensor.
+                If tensor, it should be in CPU.
+        """
+        return normalize(image, self.mean, self.std, out_type)
     
     def loader(self, train=True):
         """Create data loader.

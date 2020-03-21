@@ -86,6 +86,7 @@ def plot_predictions(data, classes, plot_title, plot_path):
 
     Args:
         data: List of images, model predictions and ground truths.
+            Images should be numpy arrays.
         classes: List of classes in the dataset.
         plot_title: Title for the plot.
         plot_path: Complete path for saving the plot.
@@ -102,7 +103,6 @@ def plot_predictions(data, classes, plot_title, plot_path):
         if idx > 24:
             break
         
-        rgb_image = np.transpose(result['image'], (1, 2, 0)) / 2 + 0.5
         label = result['label'].item()
         prediction = result['prediction'].item()
 
@@ -111,7 +111,7 @@ def plot_predictions(data, classes, plot_title, plot_path):
             row_count += 1
         axs[row_count][idx % 5].axis('off')
         axs[row_count][idx % 5].set_title(f'Label: {classes[label]}\nPrediction: {classes[prediction]}')
-        axs[row_count][idx % 5].imshow(rgb_image)
+        axs[row_count][idx % 5].imshow(result['image'])
     
     # Set spacing
     fig.tight_layout()
@@ -121,28 +121,33 @@ def plot_predictions(data, classes, plot_title, plot_path):
     fig.savefig(f'{plot_path}', bbox_inches='tight')
 
 
-def save_and_show_result(correct_pred, incorrect_pred, classes):
+def save_and_show_result(classes, correct_pred=None, incorrect_pred=None, path=None):
     """Display network predictions.
 
     Args:
-        correct_pred: Contains correct model predictions and labels.
-        incorrect_pred: Contains incorrect model predictions and labels.
         classes: List of classes in the dataset.
+        correct_pred: Contains correct model predictions and labels.
+            Defaults to None.
+        incorrect_pred: Contains incorrect model predictions and labels.
+            Defaults to None.
+        path: Path where the results will be saved.
+            Defaults to None.
     """
 
     # Create directories for saving predictions
-    path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 'predictions'
-    )
+    if path is None:
+        path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'predictions'
+        )
     if not os.path.exists(path):
         os.makedirs(path)
     
-    # Plot correct predicitons
-    plot_predictions(
-        correct_pred, classes, 'Correct Predictions', f'{path}/correct_predictions.png'
-    )
+    if not correct_pred is None:  # Plot correct predicitons
+        plot_predictions(
+            correct_pred, classes, 'Correct Predictions', f'{path}/correct_predictions.png'
+        )
 
-    # Plot incorrect predicitons
-    plot_predictions(
-        incorrect_pred, classes, '\nIncorrect Predictions', f'{path}/incorrect_predictions.png'
-    )
+    if not incorrect_pred is None:  # Plot incorrect predicitons
+        plot_predictions(
+            incorrect_pred, classes, '\nIncorrect Predictions', f'{path}/incorrect_predictions.png'
+        )
