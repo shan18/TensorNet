@@ -37,6 +37,7 @@ TensorNet currently supports the following features
     - L2 regularization
   - Callbacks
     - LR Scheduler
+  - LR Finder
 - Model training and validation
 - Datasets (data is is returned via data loaders)
   - CIFAR10
