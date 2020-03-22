@@ -89,17 +89,18 @@ class GradCAMView:
         Returns:
             Dictionary containing unnormalized image, heatmap and CAM result.
         """
+        image = unnormalize(norm_image, self.mean, self.std)  # Unnormalized image
         norm_image_cuda = norm_image.clone().unsqueeze_(0).to(self.device)
         heatmap, result = {}, {}
         for layer, gc in self.gradcam.items():
             mask, _ = gc(norm_image_cuda, class_idx=class_idx)
             cam_heatmap, cam_result = visualize_cam(
                 mask,
-                unnormalize(norm_image, self.mean, self.std, out_type='tensor').clone().unsqueeze_(0).to(self.device)
+                image.clone().unsqueeze_(0).to(self.device)
             )
             heatmap[layer], result[layer] = to_numpy(cam_heatmap), to_numpy(cam_result)
         return {
-            'image': unnormalize(norm_image, self.mean, self.std),
+            'image': to_numpy(image),
             'heatmap': heatmap,
             'result': result
         }
@@ -108,12 +109,12 @@ class GradCAMView:
         """Get CAM for a list of images.
 
         Args:
-            norm_img_class_list: List of dictionaries. Each dict contains
-                keys 'image' and 'class' having values 'normalized_image'
-                and 'class_idx' respectively. class_idx is optional.
-                If class_idx is not given then the model prediction
-                will be used and the parameter should just be a list of
-                images. Each image should be of type torch.Tensor
+            norm_img_class_list: List of dictionaries or list of images.
+                If dict, each dict contains keys 'image' and 'class'
+                having values 'normalized_image' and 'class_idx' respectively.
+                class_idx is optional. If class_idx is not given then the
+                model prediction will be used and the parameter should just be
+                a list of images. Each image should be of type torch.Tensor
         """
         for norm_image_class in norm_img_class_list:
             class_idx = None
@@ -122,12 +123,16 @@ class GradCAMView:
                 class_idx, norm_image = norm_image_class['class'], norm_image_class['image']
             self.views.append(self._cam_image(norm_image, class_idx=class_idx))
     
-    def __call__(self, norm_image_list):
+    def __call__(self, norm_img_class_list):
         """Get GradCAM for a list of images.
 
         Args:
-            norm_image_list: List of normalized images. Each image
-                should be of type torch.Tensor
+            norm_img_class_list: List of dictionaries or list of images.
+                If dict, each dict contains keys 'image' and 'class'
+                having values 'normalized_image' and 'class_idx' respectively.
+                class_idx is optional. If class_idx is not given then the
+                model prediction will be used and the parameter should just be
+                a list of images. Each image should be of type torch.Tensor
         """
-        self.cam(norm_image_list)
+        self.cam(norm_img_class_list)
         return self.views

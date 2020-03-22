@@ -74,7 +74,7 @@ def to_numpy(tensor):
     Args:
         tensor: Tensor to be converted.
     """
-    return np.transpose(tensor.clone().numpy(), (1, 2, 0))
+    return tensor.transpose(0, 1).transpose(1, 2).clone().numpy()
 
 
 def to_tensor(ndarray):
