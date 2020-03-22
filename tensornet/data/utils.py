@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 
-def unnormalize(image, mean, std, out_type='array'):
+def unnormalize(image, mean, std, transpose=False):
     """Un-normalize a given image.
     
     Args:
@@ -12,23 +12,30 @@ def unnormalize(image, mean, std, out_type='array'):
             a tuple with 3 values (one for each channel).
         std: Standard deviation value. It can be a single value or
             a tuple with 3 values (one for each channel).
-        out_type: Out type of the unnormalized image.
-            If `array` then ndarray is returned else if
-            `tensor` then torch tensor is returned.
+        transpose: If True, transposed output will be returned.
+            This param is effective only when image is a tensor.
+            If tensor, the output will have channel number
+            as the last dim.
     """
 
-    if type(image) == torch.Tensor:
-        image = np.transpose(image.clone().numpy(), (1, 2, 0))
+    if not type(mean) in [list, tuple]:
+        mean = (mean,) * 3
+    if not type(std) in [list, tuple]:
+        std = (std,) * 3
+
+    if type(image) == torch.Tensor:  # tensor
+        image = image * torch.Tensor(std)[:, None, None] + torch.Tensor(mean)[:, None, None]
+        if transpose:
+            image = image.transpose(0, 1).transpose(1, 2)
+    elif type(image) == np.ndarray:  # numpy array
+        image = image * std + mean
+    else:  # No valid value given
+        image = None
     
-    normal_image = image * std + mean
-    if out_type == 'tensor':
-        return torch.Tensor(np.transpose(normal_image, (2, 0, 1)))
-    elif out_type == 'array':
-        return normal_image
-    return None  # No valid value given
+    return image
 
 
-def normalize(image, mean, std, out_type='array'):
+def normalize(image, mean, std, transpose=False):
     """Normalize a given image.
     
     Args:
@@ -38,20 +45,27 @@ def normalize(image, mean, std, out_type='array'):
             a tuple with 3 values (one for each channel).
         std: Standard deviation value. It can be a single value or
             a tuple with 3 values (one for each channel).
-        out_type: Out type of the normalized image.
-            If `array` then ndarray is returned else if
-            `tensor` then torch tensor is returned.
+        transpose: If True, transposed output will be returned.
+            This param is effective only when image is a tensor.
+            If tensor, the output will have channel number
+            as the last dim.
     """
 
-    if type(image) == torch.Tensor:
-        image = np.transpose(image.clone().numpy(), (1, 2, 0))
+    if not type(mean) in [list, tuple]:
+        mean = (mean,) * 3
+    if not type(std) in [list, tuple]:
+        std = (std,) * 3
+
+    if type(image) == torch.Tensor:  # tensor
+        image = (image - torch.Tensor(mean)[:, None, None]) / torch.Tensor(std)[:, None, None]
+        if transpose:
+            image = image.transpose(0, 1).transpose(1, 2)
+    elif type(image) == np.ndarray:  # numpy array
+        image = (image - mean) / std
+    else:  # No valid value given
+        image = None
     
-    normal_image = (image - mean) / std
-    if out_type == 'tensor':
-        return torch.Tensor(np.transpose(normal_image, (2, 0, 1)))
-    elif out_type == 'array':
-        return normal_image
-    return None  # No valid value given
+    return image
 
 
 def to_numpy(tensor):

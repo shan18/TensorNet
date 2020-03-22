@@ -1,2 +1,3 @@
 from .cuda import *
-from .result import *
+from .display import *
+from .predictions import *

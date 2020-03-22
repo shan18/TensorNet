@@ -143,23 +143,31 @@ class CIFAR10:
         data = self.train_data if train else self.val_data
         return data.data, data.targets
     
-    def unnormalize(self, image, out_type='array'):
+    def unnormalize(self, image, transpose=False):
         """Un-normalize a given image.
 
         Args:
             image: A 3-D ndarray or 3-D tensor.
                 If tensor, it should be in CPU.
+            transpose: If True, transposed output will be returned.
+                This param is effective only when image is a tensor.
+                If tensor, the output will have channel number
+                as the last dim.
         """
-        return unnormalize(image, self.mean, self.std, out_type)
+        return unnormalize(image, self.mean, self.std, transpose)
     
-    def normalize(self, image, out_type='array'):
+    def normalize(self, image, transpose=False):
         """Normalize a given image.
 
         Args:
             image: A 3-D ndarray or 3-D tensor.
                 If tensor, it should be in CPU.
+            transpose: If True, transposed output will be returned.
+                This param is effective only when image is a tensor.
+                If tensor, the output will have channel number
+                as the last dim.
         """
-        return normalize(image, self.mean, self.std, out_type)
+        return normalize(image, self.mean, self.std, transpose)
     
     def loader(self, train=True):
         """Create data loader.

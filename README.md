@@ -16,7 +16,7 @@ pip install torch-tensornet
 If you want to get the latest version of the code before it is released on PyPI you can install the library from GitHub
 
 ```[bash]
-pip install git+https://github.com/shan18/TensorNet.git#egg=tensornet
+pip install git+https://github.com/shan18/TensorNet.git#egg=torch-tensornet
 ```
 
 ## Features

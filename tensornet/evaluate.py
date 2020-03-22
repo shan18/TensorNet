@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 
 
 def evaluate(
@@ -44,16 +43,18 @@ def evaluate(
                     if list(result)[i]:
                         if not correct_samples is None and len(correct_samples) < sample_count:
                             correct_samples.append({
+                                'id': i,
+                                'image': img_batch[i],
                                 'prediction': list(pred)[i],
                                 'label': list(target.view_as(pred))[i],
-                                'image': img_batch[i]
                             })
                     else:
                         if not incorrect_samples is None and len(incorrect_samples) < sample_count:
                             incorrect_samples.append({
+                                'id': i,
+                                'image': img_batch[i],
                                 'prediction': list(pred)[i],
                                 'label': list(target.view_as(pred))[i],
-                                'image': img_batch[i]
                             })
 
             correct += result.sum().item()
