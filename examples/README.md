@@ -2,6 +2,8 @@
 
 This directory contains examples which demonstrate how to use TensorNet.
 
+NOTE: These examples apply to the MASTER version of TensorNet only.
+
 ## Basic Use
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1giK0imE8v1B8hFG02G-nzwTOm1nn9qwq)  
