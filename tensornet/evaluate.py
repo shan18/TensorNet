@@ -6,7 +6,7 @@ def evaluate(
     correct_samples=None, incorrect_samples=None, sample_count=25,
     last_epoch=False
 ):
-    """Train the model.
+    """Evaluate the model.
 
     Args:
         model: Model instance.
