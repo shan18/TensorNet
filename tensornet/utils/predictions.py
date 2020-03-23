@@ -5,10 +5,10 @@ def class_level_accuracy(model, loader, device, classes):
     """Print test accuracy for each class in dataset.
 
     Args:
-        model: Model instance.
-        loader: Data loader.
-        device: Device where data will be loaded.
-        classes: List of classes in the dataset.
+        model (torch.nn.Module): Model Instance.
+        loader (torch.utils.data.DataLoader): Data Loader
+        device (str or torch.device): Device where data will be loaded.
+        classes (list or tuple): List of classes in the dataset
     """
 
     class_correct = list(0. for i in range(len(classes)))
@@ -36,11 +36,11 @@ def get_predictions(model, loader, device, sample_count=25):
     """Get correct and incorrect model predictions.
 
     Args:
-        model: Model instance.
-        loader: Data loader.
-        device: Device where data will be loaded.
-        sample_count: Total number of predictions to store from
-            each correct and incorrect samples. Default is 25.
+        model (torch.nn.Module): Model Instance.
+        loader (torch.utils.data.DataLoader): Data Loader.
+        device (str or torch.device): Device where data will be loaded.
+        sample_count (int, optional): Total number of predictions to store from
+            each correct and incorrect samples. (default: 25)
     """
 
     correct_samples = []

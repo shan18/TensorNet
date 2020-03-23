@@ -40,7 +40,7 @@ class GradCAMView:
         Args:
             model: Trained model.
             layers: List of layers to show GradCAM on.
-            device: GPU or CPU.
+            device (str or torch.device): GPU or CPU.
             mean: Mean of the dataset.
             std: Standard Deviation of the dataset.
         """

@@ -6,9 +6,9 @@ def l1(model, loss, factor):
     """Apply L1 regularization.
 
     Args:
-        model: Model instance.
-        loss: Loss function value.
-        factor: Factor for applying L1 regularization
+        model (torch.nn.Module): Model Instance.
+        loss (float): Loss function value.
+        factor (float): Factor for applying L1 regularization.
     
     Returns:
         Regularized loss value.

@@ -9,20 +9,21 @@ def evaluate(
     """Evaluate the model.
 
     Args:
-        model: Model instance.
-        loader: Validation data loader.
-        device: Device where the data will be loaded.
-        criterion: Loss function.
-        losses: List containing the change in loss.
-            Default is None.
-        accuracies: List containing the change in accuracy.
-            Default is None.
-        correct_samples: List containing correctly predicted samples.
-            Default is None.
-        incorrect_samples: List containing incorrectly predicted samples.
-            Default is None.
-        sample_count: Total number of predictions to store from each correct
-            and incorrect samples. Default is 25.
+        model (torch.nn.Module): Model Instance.
+        loader (torch.utils.data.DataLoader): Validation data loader.
+        device (str or torch.device): Device where the data will
+            be loaded.
+        criterion (torch.nn): Loss function.
+        losses (list, optional): List containing the change in loss.
+            (default: None)
+        accuracies (list, optional): List containing the change in accuracy.
+            (default: None)
+        correct_samples (list, optional): List containing correctly predicted
+            samples. (default: None)
+        incorrect_samples (list, optional): List containing incorrectly
+            predicted samples. (default: None)
+        sample_count (int, optional): Total number of predictions to store
+            from each correct and incorrect samples. (default: 25)
     """
 
     model.eval()

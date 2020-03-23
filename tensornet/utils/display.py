@@ -6,10 +6,10 @@ def plot_metric(data, metric):
     """Plot accuracy graph or loss graph.
 
     Args:
-        data: If only single plot then this is a list, else
-            for multiple plots this is a dict with keys containing
-            the plot name and values being a list of points to plot.
-        metric: Metric name which is to be plotted. Can be either
+        data (list or dict): If only single plot then this is a list, else
+            for multiple plots this is a dict with keys containing.
+            the plot name and values being a list of points to plot
+        metric (str): Metric name which is to be plotted. Can be either
             loss or accuracy.
     """
 
@@ -52,11 +52,11 @@ def plot_predictions(data, classes, plot_title, plot_path):
     """Display data.
 
     Args:
-        data: List of images, model predictions and ground truths.
+        data (list): List of images, model predictions and ground truths.
             Images should be numpy arrays.
-        classes: List of classes in the dataset.
-        plot_title: Title for the plot.
-        plot_path: Complete path for saving the plot.
+        classes (list or tuple): List of classes in the dataset.
+        plot_title (str): Title for the plot.
+        plot_path (str): Complete path for saving the plot.
     """
 
     # Initialize plot
@@ -92,13 +92,13 @@ def save_and_show_result(classes, correct_pred=None, incorrect_pred=None, path=N
     """Display network predictions.
 
     Args:
-        classes: List of classes in the dataset.
-        correct_pred: Contains correct model predictions and labels.
-            Defaults to None.
-        incorrect_pred: Contains incorrect model predictions and labels.
-            Defaults to None.
-        path: Path where the results will be saved.
-            Defaults to None.
+        classes (list or tuple): List of classes in the dataset.
+        correct_pred (list, optional): Contains correct model predictions and labels.
+            (default: None)
+        incorrect_pred (list, optional): Contains incorrect model predictions and labels.
+            (default: None)
+        path (str, optional): Path where the results will be saved.
+            (default: None)
     """
 
     # Create directories for saving predictions

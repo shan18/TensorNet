@@ -4,7 +4,7 @@ import torch.nn as nn
 class BasicNet(nn.Module):
 
     def __init__(self, dropout_rate):
-        """ This function instantiates all the model layers """
+        """This function instantiates all the model layers."""
 
         super(BaseNet, self).__init__()
 

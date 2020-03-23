@@ -17,20 +17,18 @@ class LRFinder(object):
     and what is the optimal learning rate.
 
     Args:
-        model: Model Instance.
-        optimizer: optimizer where the defined learning
+        model (torch.nn.Module): Model Instance.
+        optimizer (torch.optim): Optimizer where the defined learning
             is assumed to be the lower boundary of the range test.
-        criterion: wrapped loss function.
-        device: a string ('cpu or 'cuda') with an optional ordinal for the device type
-            (e.g. 'cuda:X', where is the ordinal). Alternatively, can be an object
-            representing the device on which the computation will take place.
-            Default: None, uses the same device as 'model'.
-        memory_cache: if this flag is set to True, 'state_dict' of
+        criterion (torch.nn): Loss function.
+        device (str or torch.device, optional): Device where the computation
+            will take place. If None, uses the same device as `model`. (default: none)
+        memory_cache (bool, optional): If this flag is set to True, state_dict of
             model and optimizer will be cached in memory. Otherwise, they will be saved
-            to files under the 'cache_dir'.
-        cache_dir: path for storing temporary files. If no path is
+            to files under the `cache_dir`. (default: True)
+        cache_dir (str, optional): Path for storing temporary files. If no path is
             specified, system-wide temporary directory is used. Notice that this
-            parameter will be ignored if 'memory_cache' is True.
+            parameter will be ignored if `memory_cache` is True. (default: None)
     """
 
     def __init__(
@@ -66,7 +64,6 @@ class LRFinder(object):
 
     def reset(self):
         """Restores the model and optimizer to their initial states."""
-
         self.model.load_state_dict(self.state_cacher.retrieve('model'))
         self.optimizer.load_state_dict(self.state_cacher.retrieve('optimizer'))
         self.model.to(self.model_device)
@@ -104,24 +101,24 @@ class LRFinder(object):
         """Performs the learning rate range test.
 
         Args:
-            train_loader (torch.utils.data.DataLoader): the training set data laoder.
-            val_loader (torch.utils.data.DataLoader, optional): if None the range test
+            train_loader (torch.utils.data.DataLoader): The training set data loader.
+            val_loader (torch.utils.data.DataLoader, optional): If None, the range test
                 will only use the training loss. When given a data loader, the model is
                 evaluated after each iteration on that dataset and the evaluation loss
                 is used. Note that in this mode the test takes significantly longer but
-                generally produces more precise results. Default: None.
-            start_lr (float, optional): the starting learning rate for the range test.
-                Default: None (uses the learning rate from the optimizer).
-            end_lr (float, optional): the maximum learning rate to test. Default: 10.
-            num_iter (int, optional): the number of iterations over which the test
-                occurs. If None, then test occurs for one epoch. Default is None.
-            step_mode (str, optional): one of the available learning rate policies,
-                linear or exponential ("linear", "exp"). Default: "exp".
-            smooth_f (float, optional): the loss smoothing factor within the [0, 1]
+                generally produces more precise results. (default: None)
+            start_lr (float, optional): The starting learning rate for the range test.
+                If None, uses the learning rate from the optimizer. (default: None)
+            end_lr (float, optional): The maximum learning rate to test. (default: 10)
+            num_iter (int, optional): The number of iterations over which the test
+                occurs. If None, then test occurs for one epoch. (default: None)
+            step_mode (str, optional): One of the available learning rate policies,
+                linear or exponential ('linear', 'exp'). (default: 'exp')
+            smooth_f (float, optional): The loss smoothing factor within the [0, 1]
                 interval. Disabled if set to 0, otherwise the loss is smoothed using
-                exponential smoothing. Default: 0.05.
-            diverge_th (int, optional): the test is stopped when the loss surpasses the
-                threshold:  diverge_th * best_loss. Default: 5.
+                exponential smoothing. (default: 0.05)
+            diverge_th (int, optional): The test is stopped when the loss surpasses the
+                threshold:  diverge_th * best_loss. (default: 5)
         """
 
         # Reset test results
@@ -141,7 +138,7 @@ class LRFinder(object):
         
         # Set number of iterations
         if num_iter is None:
-            num_iter = len(train_loader.dataset) / train_loader.batch_size
+            num_iter = len(train_loader.dataset) // train_loader.batch_size
 
         # Initialize the proper learning rate policy
         if step_mode.lower() == 'exp':
@@ -225,14 +222,14 @@ class LRFinder(object):
         """Plots the learning rate range test.
 
         Args:
-            skip_start (int, optional): number of batches to trim from the start.
-                Default: 10.
-            skip_end (int, optional): number of batches to trim from the end.
-                Default: 5.
+            skip_start (int, optional): Number of batches to trim from the start.
+                (default: 10)
+            skip_end (int, optional): Number of batches to trim from the end.
+                (default: 5)
             log_lr (bool, optional): True to plot the learning rate in a logarithmic
-                scale; otherwise, plotted in a linear scale. Default: True.
-            show_lr (float, optional): is set, will add vertical line to visualize
-                specified learning rate; Default: None.
+                scale; otherwise, plotted in a linear scale. (default: True)
+            show_lr (float, optional): Is set, will add vertical line to visualize
+                specified learning rate. (default: None)
         """
 
         if skip_start < 0:
@@ -270,10 +267,10 @@ class LinearLR(_LRScheduler):
     iterations.
     
     Args:
-        optimizer (torch.optim.Optimizer): wrapped optimizer.
-        end_lr (float): the final learning rate.
-        num_iter (int): the number of iterations over which the test occurs.
-        last_epoch (int, optional): the index of last epoch. Default: -1.
+        optimizer (torch.optim.Optimizer): Optimizer.
+        end_lr (float): The final learning rate.
+        num_iter (int): The number of iterations over which the test occurs.
+        last_epoch (int, optional): The index of last epoch. (default: -1)
     """
 
     def __init__(self, optimizer, end_lr, num_iter, last_epoch=-1):
@@ -292,10 +289,10 @@ class ExponentialLR(_LRScheduler):
     iterations.
 
     Args:
-        optimizer (torch.optim.Optimizer): wrapped optimizer.
-        end_lr (float): the final learning rate.
-        num_iter (int): the number of iterations over which the test occurs.
-        last_epoch (int, optional): the index of last epoch. Default: -1.
+        optimizer (torch.optim.Optimizer): Optimizer.
+        end_lr (float): The final learning rate.
+        num_iter (int): The number of iterations over which the test occurs.
+        last_epoch (int, optional): The index of last epoch. (default: -1)
     """
 
     def __init__(self, optimizer, end_lr, num_iter, last_epoch=-1):
@@ -320,7 +317,7 @@ class StateCacher(object):
             self.cache_dir = tempfile.gettempdir()
         else:
             if not os.path.isdir(self.cache_dir):
-                raise ValueError("Given cache_dir is not a valid directory.")
+                raise ValueError('Given cache_dir is not a valid directory.')
 
         self.cached = {}
 

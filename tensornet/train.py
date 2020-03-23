@@ -11,19 +11,20 @@ def train(
     """Train the model.
 
     Args:
-        model: Model instance.
-        device: Device where the data will be loaded.
-        loader: Training data loader.
-        optimizer: Optimizer for the model.
-        criterion: Loss Function.
-        losses: List containing the change in loss.
-            Default is None.
-        accuracies: List containing the change in accuracy.
-            Default is None.
-        track: Can be set to either 'epoch' or 'batch' and will
+        model (torch.nn.Module): Model Instance.
+        device (str or torch.device): Device where the data
+            will be loaded.
+        loader (torch.utils.data.DataLoader): Training data loader.
+        optimizer (torch.optim): Optimizer for the model.
+        criterion (torch.nn): Loss Function.
+        losses (list, optional): List containing the change in loss.
+            (default: None)
+        accuracies (list, optional): List containing the change in accuracy.
+            (default: None)
+        track (str, optional): Can be set to either 'epoch' or 'batch' and will
             store the changes in loss and accuracy for each batch
-            or the entire epoch respectively. Defaults to 'epoch'.
-        l1_factor: L1 regularization factor.
+            or the entire epoch respectively. (default: 'epoch')
+        l1_factor (float, optional): L1 regularization factor. (default: 0)
     """
 
     model.train()
