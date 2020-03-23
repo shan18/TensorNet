@@ -5,7 +5,7 @@ import os
 import copy
 import torch
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 from torch.optim.lr_scheduler import _LRScheduler
 
 
@@ -96,7 +96,7 @@ class LRFinder(object):
         val_loader=None,
         start_lr=None,
         end_lr=10,
-        num_iter=100,
+        num_iter=None,
         step_mode='exp',
         smooth_f=0.05,
         diverge_th=5,
@@ -114,7 +114,7 @@ class LRFinder(object):
                 Default: None (uses the learning rate from the optimizer).
             end_lr (float, optional): the maximum learning rate to test. Default: 10.
             num_iter (int, optional): the number of iterations over which the test
-                occurs. Default: 100.
+                occurs. If None, then test occurs for one epoch. Default is None.
             step_mode (str, optional): one of the available learning rate policies,
                 linear or exponential ("linear", "exp"). Default: "exp".
             smooth_f (float, optional): the loss smoothing factor within the [0, 1]
@@ -151,6 +151,9 @@ class LRFinder(object):
             raise ValueError('smooth_f is outside the range [0, 1]')
 
         # Create an iterator to get data batch by batch
+        if num_iter is None:
+            num_iter = len(train_loader.dataset) / train_loader.batch_size
+        
         train_iterator = iter(train_loader)
         pbar = tqdm(range(num_iter))
         for _, iteration in enumerate(pbar, 0):
@@ -177,7 +180,7 @@ class LRFinder(object):
             # Check if the loss has diverged; if it has, stop the test
             self.history['loss'].append(loss)
             if loss > diverge_th * self.best_loss:
-                pbar.update(len(num_iter))
+                pbar.update(num_iter)
                 print('Stopping early, the loss has diverged')
                 break
 
