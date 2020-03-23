@@ -17,20 +17,20 @@ class LRFinder(object):
     and what is the optimal learning rate.
 
     Args:
-        model (torch.nn.Module): Model Instance.
-        optimizer (torch.optim.Optimizer): optimizer where the defined learning
+        model: Model Instance.
+        optimizer: optimizer where the defined learning
             is assumed to be the lower boundary of the range test.
-        criterion (torch.nn.Module): wrapped loss function.
-        device (str or torch.device, optional): a string ("cpu" or "cuda") with an
-            optional ordinal for the device type (e.g. "cuda:X", where is the ordinal).
-            Alternatively, can be an object representing the device on which the
-            computation will take place. Default: None, uses the same device as `model`.
-        memory_cache (boolean, optional): if this flag is set to True, `state_dict` of
+        criterion: wrapped loss function.
+        device: a string ('cpu or 'cuda') with an optional ordinal for the device type
+            (e.g. 'cuda:X', where is the ordinal). Alternatively, can be an object
+            representing the device on which the computation will take place.
+            Default: None, uses the same device as 'model'.
+        memory_cache: if this flag is set to True, 'state_dict' of
             model and optimizer will be cached in memory. Otherwise, they will be saved
-            to files under the `cache_dir`.
-        cache_dir (string, optional): path for storing temporary files. If no path is
+            to files under the 'cache_dir'.
+        cache_dir: path for storing temporary files. If no path is
             specified, system-wide temporary directory is used. Notice that this
-            parameter will be ignored if `memory_cache` is True.
+            parameter will be ignored if 'memory_cache' is True.
     """
 
     def __init__(
@@ -83,7 +83,7 @@ class LRFinder(object):
             new_lrs = [new_lrs] * len(self.optimizer.param_groups)
         if len(new_lrs) != len(self.optimizer.param_groups):
             raise ValueError(
-                'Length of `new_lrs` is not equal to the number of parameter groups in the given optimizer'
+                'Length of new_lrs is not equal to the number of parameter groups in the given optimizer'
             )
 
         # Set the learning rates to the parameter groups
@@ -105,7 +105,7 @@ class LRFinder(object):
 
         Args:
             train_loader (torch.utils.data.DataLoader): the training set data laoder.
-            val_loader (torch.utils.data.DataLoader, optional): if `None` the range test
+            val_loader (torch.utils.data.DataLoader, optional): if None the range test
                 will only use the training loss. When given a data loader, the model is
                 evaluated after each iteration on that dataset and the evaluation loss
                 is used. Note that in this mode the test takes significantly longer but
@@ -152,7 +152,8 @@ class LRFinder(object):
 
         # Create an iterator to get data batch by batch
         train_iterator = iter(train_loader)
-        for iteration in tqdm(range(num_iter)):
+        pbar = tqdm(range(num_iter))
+        for _, iteration in enumerate(pbar, 0):
             # Train on batch and retrieve loss
             loss = self._train_batch(train_iterator)
             if val_loader:
@@ -176,10 +177,11 @@ class LRFinder(object):
             # Check if the loss has diverged; if it has, stop the test
             self.history['loss'].append(loss)
             if loss > diverge_th * self.best_loss:
+                pbar.update(len(num_iter))
                 print('Stopping early, the loss has diverged')
                 break
 
-        print('Learning rate search finished. See the graph with {finder_name}.plot()')
+        print('Learning rate search finished.')
 
     def _train_batch(self, train_iterator):
         self.model.train()
@@ -314,7 +316,7 @@ class StateCacher(object):
             self.cache_dir = tempfile.gettempdir()
         else:
             if not os.path.isdir(self.cache_dir):
-                raise ValueError("Given `cache_dir` is not a valid directory.")
+                raise ValueError("Given cache_dir is not a valid directory.")
 
         self.cached = {}
 
@@ -342,7 +344,7 @@ class StateCacher(object):
             return state_dict
 
     def __del__(self):
-        """Check whether there are unused cached files existing in `cache_dir` before
+        """Check whether there are unused cached files existing in cache_dir before
         this instance being destroyed.
         """
 
