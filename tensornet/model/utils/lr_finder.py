@@ -138,6 +138,10 @@ class LRFinder(object):
         # Set the starting learning rate
         if start_lr:
             self._set_learning_rate(start_lr)
+        
+        # Set number of iterations
+        if num_iter is None:
+            num_iter = len(train_loader.dataset) / train_loader.batch_size
 
         # Initialize the proper learning rate policy
         if step_mode.lower() == 'exp':
@@ -151,9 +155,6 @@ class LRFinder(object):
             raise ValueError('smooth_f is outside the range [0, 1]')
 
         # Create an iterator to get data batch by batch
-        if num_iter is None:
-            num_iter = len(train_loader.dataset) / train_loader.batch_size
-        
         train_iterator = iter(train_loader)
         pbar = tqdm(range(num_iter))
         for _, iteration in enumerate(pbar, 0):
