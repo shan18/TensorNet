@@ -7,8 +7,9 @@ class GradCAM:
 
     Args:
         input: Input image with shape of (1, 3, H, W)
-        class_idx: Class index for calculating GradCAM.
-            If not specified, the class index that makes the highest model prediction score will be used.
+        class_idx (int, optional): Class index for calculating GradCAM.
+            If not specified, the class index that makes the highest model
+            prediction score will be used. (default: None)
 
     Returns:
         mask: Saliency map of the same spatial dimension with input
