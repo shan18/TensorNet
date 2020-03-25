@@ -7,34 +7,37 @@ from tensornet.data.utils import unnormalize, normalize
 
 
 class CIFAR10:
-    """ Load CIFAR-10 Dataset. """
+    """Load CIFAR-10 Dataset."""
 
     def __init__(
         self, train_batch_size=1, val_batch_size=1, cuda=False,
         num_workers=1, path=None, horizontal_flip_prob=0.0,
         vertical_flip_prob=0.0, gaussian_blur_prob=0.0,
-        rotate_degree=0.0, cutout=0.0
+        rotate_degree=0.0, cutout_prob=0.0
     ):
         """Initializes the dataset for loading.
 
         Args:
-            train_batch_size: Number of images to consider in each batch in train set.
-            val_batch_size: Number of images to consider in each batch in validation set.
-            cuda: True is GPU is available.
-            num_workers: How many subprocesses to use for data loading.
-            path: Path where dataset will be downloaded. Defaults to None.
-                If no path provided, data will be downloaded in a pre-defined
-                directory.
-            horizontal_flip_prob: Probability of an image being horizontally flipped.
-                Defaults to 0.
-            vertical_flip_prob: Probability of an image being vertically flipped.
-                Defaults to 0.
-            rotate_prob: Probability of an image being rotated.
-                Defaults to 0.
-            rotate_degree: Angle of rotation for image augmentation.
-                Defaults to 0.
-            cutout: Probability that cutout will be performed.
-                Defaults to 0.
+            train_batch_size (int, optional): Number of images to consider
+                in each batch in train set. (default: 0)
+            val_batch_size (int, optional): Number of images to consider
+                in each batch in validation set. (default: 0)
+            cuda (bool, optional): True is GPU is available. (default: False)
+            num_workers (int, optional): How many subprocesses to use for
+                data loading. (default: 0)
+            path (str, optional): Path where dataset will be downloaded. If
+                no path provided, data will be downloaded in a pre-defined
+                directory. (default: None)
+            horizontal_flip_prob (float, optional): Probability of an image
+                being horizontally flipped. (default: 0)
+            vertical_flip_prob (float, optional): Probability of an image
+                being vertically flipped. (default: 0)
+            rotate_prob (float, optional): Probability of an image being rotated.
+                (default: 0)
+            rotate_degree (float, optional): Angle of rotation for image
+                augmentation. (default: 0)
+            cutout_prob (float, optional): Probability that cutout will be
+                performed. (default: 0)
         """
         
         self.cuda = cuda
@@ -54,7 +57,7 @@ class CIFAR10:
         self.vertical_flip_prob = vertical_flip_prob
         self.gaussian_blur_prob = gaussian_blur_prob
         self.rotate_degree = rotate_degree
-        self.cutout = cutout
+        self.cutout_prob = cutout_prob
 
         # Download sample data
         # This is done to get the image size
@@ -73,8 +76,8 @@ class CIFAR10:
         """Define data transformations
         
         Args:
-            train: If True, download training data else test data.
-                Defaults to True.
+            train (bool, optional): If True, download training data
+                else download the test data. (default: True)
         
         Returns:
             Returns data transforms based on the training mode.
@@ -92,7 +95,7 @@ class CIFAR10:
             args['vertical_flip_prob'] = self.vertical_flip_prob
             args['gaussian_blur_prob'] = self.gaussian_blur_prob
             args['rotate_degree'] = self.rotate_degree
-            args['cutout'] = self.cutout
+            args['cutout_prob'] = self.cutout_prob
             args['cutout_height'] = self.image_size[1] // 2
             args['cutout_width'] = self.image_size[2] // 2
 
@@ -102,8 +105,10 @@ class CIFAR10:
         """Download dataset.
 
         Args:
-            train: True for training data.
-            apply_transform: True if transform is to be applied on the data.
+            train (bool, optional): True for training data.
+                (default: True)
+            apply_transform (bool, optional): True if transform
+                is to be applied on the dataset. (default: True)
         
         Returns:
             Downloaded dataset.
@@ -115,12 +120,12 @@ class CIFAR10:
     
     @property
     def classes(self):
-        """ Return list of classes in the dataset. """
+        """Return list of classes in the dataset."""
         return self.class_values
     
     @property
     def image_size(self):
-        """ Return shape of data i.e. image size. """
+        """Return shape of data i.e. image size."""
         return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
     
     @property
@@ -132,10 +137,10 @@ class CIFAR10:
         return tuple(np.std(self.sample_data.data, axis=(0, 1, 2)) / 255)
     
     def data(self, train=True):
-        """ Return data based on train mode.
+        """Return data based on train mode.
 
         Args:
-            train: True for training data.
+            train (bool, optional): True for training data. (default: True)
         
         Returns:
             Training or validation data and targets.
@@ -147,12 +152,12 @@ class CIFAR10:
         """Un-normalize a given image.
 
         Args:
-            image: A 3-D ndarray or 3-D tensor.
-                If tensor, it should be in CPU.
-            transpose: If True, transposed output will be returned.
-                This param is effective only when image is a tensor.
-                If tensor, the output will have channel number
-                as the last dim.
+            image (numpy.ndarray or torch.Tensor): A 3-D ndarray
+                or 3-D tensor. If tensor, it should be in CPU.
+            transpose (bool, optional): If True, transposed output will
+                be returned. This param is effective only when image is
+                a tensor. If tensor, the output will have channel number
+                as the last dim. (default: False)
         """
         return unnormalize(image, self.mean, self.std, transpose)
     
@@ -160,12 +165,12 @@ class CIFAR10:
         """Normalize a given image.
 
         Args:
-            image: A 3-D ndarray or 3-D tensor.
-                If tensor, it should be in CPU.
-            transpose: If True, transposed output will be returned.
-                This param is effective only when image is a tensor.
-                If tensor, the output will have channel number
-                as the last dim.
+            image (numpy.ndarray or torch.Tensor): A 3-D ndarray
+                or 3-D tensor. If tensor, it should be in CPU.
+            transpose (bool, optional): If True, transposed output will
+                be returned. This param is effective only when image is
+                a tensor. If tensor, the output will have channel number
+                as the last dim. (default: False)
         """
         return normalize(image, self.mean, self.std, transpose)
     
@@ -173,7 +178,7 @@ class CIFAR10:
         """Create data loader.
 
         Args:
-            train: True for training data.
+            train (bool, optional): True for training data. (default: True)
         
         Returns:
             Dataloader instance.

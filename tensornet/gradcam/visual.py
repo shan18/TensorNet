@@ -38,11 +38,11 @@ class GradCAMView:
         """Instantiate GradCAM and GradCAM++.
 
         Args:
-            model: Trained model.
-            layers: List of layers to show GradCAM on.
+            model (torch.nn.Module): Trained model.
+            layers (list): List of layers to show GradCAM on.
             device (str or torch.device): GPU or CPU.
-            mean: Mean of the dataset.
-            std: Standard Deviation of the dataset.
+            mean (float or tuple): Mean of the dataset.
+            std (float or tuple): Standard Deviation of the dataset.
         """
         self.model = model
         self.layers = layers
@@ -83,8 +83,10 @@ class GradCAMView:
         """Get CAM for an image.
 
         Args:
-            norm_image: Normalized image. Should be of type
-                torch.Tensor
+            norm_image (torch.Tensor): Normalized image.
+            class_idx (int, optional): Class index for calculating GradCAM.
+                If not specified, the class index that makes the highest model
+                prediction score will be used. (default: None)
         
         Returns:
             Dictionary containing unnormalized image, heatmap and CAM result.
@@ -109,7 +111,7 @@ class GradCAMView:
         """Get CAM for a list of images.
 
         Args:
-            norm_img_class_list: List of dictionaries or list of images.
+            norm_img_class_list (list): List of dictionaries or list of images.
                 If dict, each dict contains keys 'image' and 'class'
                 having values 'normalized_image' and 'class_idx' respectively.
                 class_idx is optional. If class_idx is not given then the
@@ -127,7 +129,7 @@ class GradCAMView:
         """Get GradCAM for a list of images.
 
         Args:
-            norm_img_class_list: List of dictionaries or list of images.
+            norm_img_class_list (list): List of dictionaries or list of images.
                 If dict, each dict contains keys 'image' and 'class'
                 having values 'normalized_image' and 'class_idx' respectively.
                 class_idx is optional. If class_idx is not given then the
