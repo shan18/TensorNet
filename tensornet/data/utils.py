@@ -17,7 +17,7 @@ def unnormalize(image, mean, std, transpose=False):
             as the last dim. (default: False)
     """
     if type(image) == torch.Tensor:  # tensor
-        if transpose:
+        if transpose and len(image.size()) == 3:
             image = image.transpose(0, 1).transpose(1, 2)
         image = np.array(image)
     image = image * std + mean
@@ -40,7 +40,7 @@ def normalize(image, mean, std, transpose=False):
             as the last dim. (default: False)
     """
     if type(image) == torch.Tensor:  # tensor
-        if transpose:
+        if transpose and len(image.size()) == 3:
             image = image.transpose(0, 1).transpose(1, 2)
         image = np.array(image)
     image = (image - mean) / std
