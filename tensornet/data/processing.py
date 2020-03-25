@@ -44,8 +44,12 @@ class Transformations:
             if rotate_degree > 0:  # Rotate image
                 transforms_list += [A.Rotate(limit=rotate_degree)]
             if cutout_prob > 0:  # CutOut
+                if isinstance(mean, float):
+                    fill_value = mean * 255.0
+                else:
+                    fill_value = tuple([x * 255.0 for x in mean])
                 transforms_list += [A.CoarseDropout(
-                    p=cutout_prob, max_holes=1, fill_value=tuple([x * 255.0 for x in mean]),
+                    p=cutout_prob, max_holes=1, fill_value=fill_value,
                     max_height=cutout_height, max_width=cutout_width, min_height=1, min_width=1
                 )]
         
@@ -74,6 +78,9 @@ class Transformations:
 
         image = np.array(image)
         image = self.transform(image=image)['image']
+
+        if len(image.size()) == 2:
+            image = torch.unsqueeze(image, 0)
         return image
 
 
