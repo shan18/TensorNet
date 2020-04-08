@@ -1,7 +1,9 @@
 import torch.nn as nn
 
+from tensornet.model.base_model import BaseModel
 
-class BasicNet(nn.Module):
+
+class BasicNet(BaseModel):
 
     def __init__(self, dropout_rate=0.0):
         """This function instantiates all the model layers."""
