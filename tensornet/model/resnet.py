@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from tensornet.model.base_model import BaseModel
 
 
-class BasicBlock(BaseModel):
+class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):

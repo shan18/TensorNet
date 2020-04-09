@@ -9,6 +9,7 @@ class BaseModel(nn.Module):
     def __init__(self):
         """This function instantiates all the model layers."""
         super(BaseModel, self).__init__()
+        self.learner = None
     
     def forward(self, x):
         """This function defines the forward pass of the model.
@@ -52,10 +53,8 @@ class BaseModel(nn.Module):
                 store the changes in loss and accuracy for each batch
                 or the entire epoch respectively. (default: 'epoch')
         """
-        learner = Learner(
+        self.learner = Learner(
             self, optimizer, criterion, train_loader, device=device, epochs=epochs,
             val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, track=track
         )
-        learner.fit()
-
-        return learner.val_losses, learner.val_accuracies
+        self.learner.fit()

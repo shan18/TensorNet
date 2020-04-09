@@ -44,7 +44,8 @@ class Learner:
             'step_lr': None,
             'lr_plateau': None
         }
-        self._setup_callbacks(callbacks)
+        if not callbacks is None:
+            self._setup_callbacks(callbacks)
 
         self.train_losses = []
         self.val_losses = []
