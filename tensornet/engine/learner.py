@@ -42,7 +42,8 @@ class Learner:
 
         self.callbacks = {
             'step_lr': None,
-            'lr_plateau': None
+            'lr_plateau': None,
+            'one_cycle_policy': None
         }
         if not callbacks is None:
             self._setup_callbacks(callbacks)
@@ -58,6 +59,8 @@ class Learner:
                 self.callbacks['step_lr'] = callback
             elif isinstance(callback, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 self.callbacks['lr_plateau'] = callback
+            elif isinstance(callback, torch.optim.lr_scheduler.OneCycleLR):
+                self.callbacks['one_cycle_policy'] = callback
     
     def train_epoch(self):
         """Run an epoch of model training."""
@@ -75,6 +78,10 @@ class Learner:
             # Perform backpropagation
             loss.backward()
             self.optimizer.step()
+
+            # One Cycle Policy for learning rate
+            if not self.callbacks['one_cycle_policy'] is None:
+                self.callbacks['one_cycle_policy'].step()
 
             # Update Progress Bar
             pred = y_pred.argmax(dim=1, keepdim=True)
