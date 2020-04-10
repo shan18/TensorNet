@@ -35,10 +35,11 @@ TensorNet currently supports the following features
   - Regularizers
     - L1 regularization
     - L2 regularization
-  - Callbacks
+  - LR Schedulers
     - Step LR
     - Reduce LR on Plateau
-  - LR Finder
+    - One Cycle Policy
+  - LR Range Test
 - Model training and validation
 - Datasets (data is is returned via data loaders)
   - CIFAR10

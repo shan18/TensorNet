@@ -32,8 +32,7 @@ class BaseModel(nn.Module):
 
     def fit(
         self, train_loader, optimizer, criterion, device='cpu',
-        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None,
-        track='epoch'
+        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None
     ):
         """Train the model.
 
@@ -55,6 +54,6 @@ class BaseModel(nn.Module):
         """
         self.learner = Learner(
             self, optimizer, criterion, train_loader, device=device, epochs=epochs,
-            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, track=track
+            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks
         )
         self.learner.fit()
