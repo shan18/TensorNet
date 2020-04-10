@@ -1,15 +1,19 @@
-# The code in this file is referenced from https://github.com/davidtvs/pytorch-lr-finder
+# Some snippets for the code in this file are referenced from
+# https://github.com/davidtvs/pytorch-lr-finder
 
 
 import os
 import copy
 import torch
 import matplotlib.pyplot as plt
-from tqdm.autonotebook import tqdm
 from torch.optim.lr_scheduler import _LRScheduler
 
+from tensornet.engine.learner import Learner
+from tensornet.utils.progress_bar import ProgressBar
+from tensornet.data.processing import InfiniteDataLoader
 
-class LRFinder(object):
+
+class LRFinder:
     """Learning rate range test.
     The learning rate range test increases the learning rate in a pre-training run
     between two boundaries in a linear or exponential manner. It provides valuable
@@ -21,6 +25,8 @@ class LRFinder(object):
         optimizer (torch.optim): Optimizer where the defined learning
             is assumed to be the lower boundary of the range test.
         criterion (torch.nn): Loss function.
+        metric (str, optional): Metric to use for finding the best learning rate. Can
+            be either 'loss' or 'accuracy'. (default: 'loss')
         device (str or torch.device, optional): Device where the computation
             will take place. If None, uses the same device as `model`. (default: none)
         memory_cache (bool, optional): If this flag is set to True, state_dict of
@@ -36,21 +42,30 @@ class LRFinder(object):
         model,
         optimizer,
         criterion,
+        metric='loss',
         device=None,
         memory_cache=True,
         cache_dir=None,
     ):
+        # Parameter validation
+
+        # Check if correct 'metric' has been given
+        if not metric in ['loss', 'accuracy']:
+            raise ValueError(f'For "metric" expected one of (loss, accuracy), got {metric}')
+
         # Check if the optimizer is already attached to a scheduler
         self.optimizer = optimizer
         self._check_for_scheduler()
 
         self.model = model
         self.criterion = criterion
-        self.history = {'lr': [], 'loss': []}
-        self.best_loss = None
+        self.metric = metric
+        self.history = {'lr': [], 'metric': []}
+        self.best_metric = None
         self.best_lr = None
         self.memory_cache = memory_cache
         self.cache_dir = cache_dir
+        self.learner = None
 
         # Save the original state of the model and optimizer so they can be restored if
         # needed
@@ -68,12 +83,15 @@ class LRFinder(object):
         self.optimizer.load_state_dict(self.state_cacher.retrieve('optimizer'))
         self.model.to(self.model_device)
 
+        if not self.learner is None:
+            self.learner.reset_history()
+
     def _check_for_scheduler(self):
         """Check if the optimizer has and existing scheduler attached to it."""
         for param_group in self.optimizer.param_groups:
             if 'initial_lr' in param_group:
                 raise RuntimeError('Optimizer already has a scheduler attached to it')
-
+    
     def _set_learning_rate(self, new_lrs):
         """Set the given learning rates in the optimizer."""
         if not isinstance(new_lrs, list):
@@ -85,15 +103,16 @@ class LRFinder(object):
 
         # Set the learning rates to the parameter groups
         for param_group, new_lr in zip(self.optimizer.param_groups, new_lrs):
-            param_group["lr"] = new_lr
+            param_group['lr'] = new_lr
 
     def range_test(
         self,
         train_loader,
+        iterations,
+        mode='iteration',
         val_loader=None,
         start_lr=None,
         end_lr=10,
-        num_iter=None,
         step_mode='exp',
         smooth_f=0.05,
         diverge_th=5,
@@ -102,28 +121,36 @@ class LRFinder(object):
 
         Args:
             train_loader (torch.utils.data.DataLoader): The training set data loader.
+            iterations (int): The number of iterations/epochs over which the test occurs.
+                If 'mode' is set to 'iteration' then it will correspond to the
+                number of iterations else if mode is set to 'epoch' then it will correspond
+                to the number of epochs.
+            mode (str, optional): After which mode to update the learning rate. Can be
+                either 'iteration' or 'epoch'. (default: 'iteration') 
             val_loader (torch.utils.data.DataLoader, optional): If None, the range test
-                will only use the training loss. When given a data loader, the model is
-                evaluated after each iteration on that dataset and the evaluation loss
+                will only use the training metric. When given a data loader, the model is
+                evaluated after each iteration on that dataset and the evaluation metric
                 is used. Note that in this mode the test takes significantly longer but
                 generally produces more precise results. (default: None)
             start_lr (float, optional): The starting learning rate for the range test.
                 If None, uses the learning rate from the optimizer. (default: None)
             end_lr (float, optional): The maximum learning rate to test. (default: 10)
-            num_iter (int, optional): The number of iterations over which the test
-                occurs. If None, then test occurs for one epoch. (default: None)
             step_mode (str, optional): One of the available learning rate policies,
                 linear or exponential ('linear', 'exp'). (default: 'exp')
-            smooth_f (float, optional): The loss smoothing factor within the [0, 1]
-                interval. Disabled if set to 0, otherwise the loss is smoothed using
+            smooth_f (float, optional): The metric smoothing factor within the [0, 1]
+                interval. Disabled if set to 0, otherwise the metric is smoothed using
                 exponential smoothing. (default: 0.05)
-            diverge_th (int, optional): The test is stopped when the loss surpasses the
-                threshold:  diverge_th * best_loss. (default: 5)
+            diverge_th (int, optional): The test is stopped when the metric surpasses the
+                threshold: diverge_th * best_metric. To disable, set it to 0. (default: 5)
         """
 
+        # Check if correct 'mode' mode has been given
+        if not mode in ['iteration', 'epoch']:
+            raise ValueError(f'For "mode" expected one of (iteration, epoch), got {mode}')
+
         # Reset test results
-        self.history = {'lr': [], 'loss': []}
-        self.best_loss = None
+        self.history = {'lr': [], 'metric': []}
+        self.best_metric = None
         self.best_lr = None
 
         # Move the model to the proper device
@@ -135,90 +162,118 @@ class LRFinder(object):
         # Set the starting learning rate
         if start_lr:
             self._set_learning_rate(start_lr)
-        
-        # Set number of iterations
-        if num_iter is None:
-            num_iter = len(train_loader.dataset) // train_loader.batch_size
 
         # Initialize the proper learning rate policy
         if step_mode.lower() == 'exp':
-            lr_schedule = ExponentialLR(self.optimizer, end_lr, num_iter)
+            lr_schedule = ExponentialLR(self.optimizer, end_lr, iterations)
         elif step_mode.lower() == 'linear':
-            lr_schedule = LinearLR(self.optimizer, end_lr, num_iter)
+            lr_schedule = LinearLR(self.optimizer, end_lr, iterations)
         else:
             raise ValueError(f'Expected one of (exp, linear), got {step_mode}')
 
         if smooth_f < 0 or smooth_f >= 1:
             raise ValueError('smooth_f is outside the range [0, 1]')
 
-        # Create an iterator to get data batch by batch
-        train_iterator = iter(train_loader)
-        pbar = tqdm(range(num_iter))
-        for _, iteration in enumerate(pbar, 0):
-            # Train on batch and retrieve loss
-            loss = self._train_batch(train_iterator)
+        # Get the learner object
+        self.learner = Learner(
+            self.model, self.optimizer, self.criterion, train_loader,
+            device=self.device, val_loader=val_loader
+        )
+
+        train_iterator = InfiniteDataLoader(train_loader)
+        pbar = ProgressBar(target=iterations, width=8)
+        if mode == 'iteration':
+            print(mode.title() + 's')
+        for iteration in range(iterations):
+            # Train model
+            if mode == 'epoch':
+                print(f'{mode.title()} {iteration + 1}:')
+            self._train_model(mode, train_iterator)
             if val_loader:
-                loss = self._validate(val_loader)
+                self.learner.validate()
+            
+            # Get metric value
+            metric_value = self._get_metric(val_loader)
 
             # Update the learning rate
             lr_schedule.step()
             self.history['lr'].append(lr_schedule.get_lr()[0])
 
-            # Track the best loss and smooth it if smooth_f is specified
+            # Track the best metric and smooth it if smooth_f is specified
             if iteration == 0:
-                self.best_loss = loss
+                self.best_metric = metric_value
                 self.best_lr = self.history['lr'][-1]
             else:
                 if smooth_f > 0:
-                    loss = smooth_f * loss + (1 - smooth_f) * self.history['loss'][-1]
-                if loss < self.best_loss:
-                    self.best_loss = loss
+                    metric_value = smooth_f * metric_value + (1 - smooth_f) * self.history['metric'][-1]
+                if (
+                    (self.metric == 'loss' and metric_value < self.best_metric) or
+                    (self.metric == 'accuracy' and metric_value > self.best_metric)
+                ):
+                    self.best_metric = metric_value
                     self.best_lr = self.history['lr'][-1]
 
-            # Check if the loss has diverged; if it has, stop the test
-            self.history['loss'].append(loss)
-            if loss > diverge_th * self.best_loss:
-                pbar.update(num_iter)
-                print('Stopping early, the loss has diverged')
+            # Check if the metric has diverged; if it has, stop the test
+            self.history['metric'].append(metric_value)
+            metric_value = self._display_metric_value(metric_value)
+            if (
+                diverge_th > 0 and
+                ((self.metric == 'loss' and metric_value > self.best_metric * diverge_th) or
+                (self.metric == 'accuracy' and metric_value < self.best_metric / diverge_th))
+            ):
+                if mode == 'iteration':
+                    pbar.update(iterations - 1, values=[
+                        ('lr', self.history['lr'][-1]),
+                        (self.metric.title(), metric_value)
+                    ])
+                print('\nStopping early, the loss has diverged.')
                 break
-
+            else:
+                if mode == 'epoch':
+                    lr = self.history['lr'][-1]
+                    print(f'Learning Rate: {lr:.4f}, {self.metric.title()}: {metric_value:.2f}\n')
+                elif mode == 'iteration':
+                    pbar.update(iteration, values=[
+                        ('lr', self.history['lr'][-1]),
+                        (self.metric.title(), metric_value)
+                    ])
+        
+        metric = self._display_metric_value(self.best_metric)
+        if mode == 'epoch':
+            print(f'Learning Rate: {self.best_lr:.4f}, {self.metric.title()}: {metric:.2f}\n')
+        elif mode == 'iteration':
+            pbar.add(1, values=[
+                ('lr', self.best_lr),
+                (self.metric.title(), metric)
+            ])
         print('Learning rate search finished.')
+    
+    def _train_model(self, mode, train_iterator):
+        if mode == 'iteration':
+            self.model.train()
+            data, targets = train_iterator.get_batch()
+            loss = self.learner.train_batch(data, targets)
+            accuracy = 100 * self.learner.train_correct / self.learner.train_processed
+            self.learner.update_training_history(loss, accuracy)
+        elif mode == 'epoch':
+            self.learner.train_epoch()
+    
+    def _get_metric(self, validation=None):
+        if self.metric == 'loss':
+            if validation:
+                return self.learner.val_losses[-1]
+            return self.learner.train_losses[-1]
+        elif self.metric == 'accuracy':
+            if validation:
+                return self.learner.val_accuracies[-1] / 100
+            return self.learner.train_accuracies[-1] / 100
+    
+    def _display_metric_value(self, value):
+        if self.metric == 'accuracy':
+            return value * 100
+        return value
 
-    def _train_batch(self, train_iterator):
-        self.model.train()
-        total_loss = None  # for late initialization
-
-        self.optimizer.zero_grad()
-        inputs, labels = next(train_iterator)
-        inputs, labels = inputs.to(self.device), labels.to(self.device)
-
-        # Forward pass
-        outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels)
-
-        # Backward pass
-        loss.backward()
-        self.optimizer.step()
-
-        return loss.item()
-
-    def _validate(self, loader):
-        # Set model to evaluation mode and disable gradient computation
-        loss = 0
-        self.model.eval()
-        with torch.no_grad():
-            for inputs, labels in loader:
-                # Move data to the correct device
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
-                batch_size = inputs.size(0)
-
-                # Forward pass and loss computation
-                outputs = self.model(inputs)
-                loss += self.criterion(outputs, labels).item() * batch_size
-
-        return loss / len(loader.dataset)
-
-    def plot(self, skip_start=10, skip_end=5, log_lr=True, show_lr=None):
+    def plot(self, log_lr=True, show_lr=None):
         """Plots the learning rate range test.
 
         Args:
@@ -232,30 +287,19 @@ class LRFinder(object):
                 specified learning rate. (default: None)
         """
 
-        if skip_start < 0:
-            raise ValueError("skip_start cannot be negative")
-        if skip_end < 0:
-            raise ValueError("skip_end cannot be negative")
         if show_lr is not None and not isinstance(show_lr, float):
             raise ValueError("show_lr must be float")
 
-        # Get the data to plot from the history dictionary. Also, handle skip_end=0
-        # properly so the behaviour is the expected
+        # Get the data to plot from the history dictionary.
         lrs = self.history['lr']
-        losses = self.history['loss']
-        if skip_end == 0:
-            lrs = lrs[skip_start:]
-            losses = losses[skip_start:]
-        else:
-            lrs = lrs[skip_start:-skip_end]
-            losses = losses[skip_start:-skip_end]
+        metrics = self.history['metric']
 
-        # Plot loss as a function of the learning rate
-        plt.plot(lrs, losses)
+        # Plot metric_value as a function of the learning rate
+        plt.plot(lrs, metrics)
         if log_lr:
             plt.xscale('log')
         plt.xlabel('Learning rate')
-        plt.ylabel('Loss')
+        plt.ylabel(self.metric.title())
 
         if show_lr is not None:
             plt.axvline(x=show_lr, color='red')
@@ -269,18 +313,18 @@ class LinearLR(_LRScheduler):
     Args:
         optimizer (torch.optim.Optimizer): Optimizer.
         end_lr (float): The final learning rate.
-        num_iter (int): The number of iterations over which the test occurs.
+        iterations (int): The number of iterations over which the test occurs.
         last_epoch (int, optional): The index of last epoch. (default: -1)
     """
 
-    def __init__(self, optimizer, end_lr, num_iter, last_epoch=-1):
+    def __init__(self, optimizer, end_lr, iterations, last_epoch=-1):
         self.end_lr = end_lr
-        self.num_iter = num_iter
+        self.iterations = iterations
         super(LinearLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
         curr_iter = self.last_epoch + 1
-        r = curr_iter / self.num_iter
+        r = curr_iter / self.iterations
         return [base_lr + r * (self.end_lr - base_lr) for base_lr in self.base_lrs]
 
 
@@ -291,18 +335,18 @@ class ExponentialLR(_LRScheduler):
     Args:
         optimizer (torch.optim.Optimizer): Optimizer.
         end_lr (float): The final learning rate.
-        num_iter (int): The number of iterations over which the test occurs.
+        iterations (int): The number of iterations/epochs over which the test occurs.
         last_epoch (int, optional): The index of last epoch. (default: -1)
     """
 
-    def __init__(self, optimizer, end_lr, num_iter, last_epoch=-1):
+    def __init__(self, optimizer, end_lr, iterations, last_epoch=-1):
         self.end_lr = end_lr
-        self.num_iter = num_iter
+        self.iterations = iterations
         super(ExponentialLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
         curr_iter = self.last_epoch + 1
-        r = curr_iter / self.num_iter
+        r = curr_iter / self.iterations
         return [base_lr * (self.end_lr / base_lr) ** r for base_lr in self.base_lrs]
 
 
