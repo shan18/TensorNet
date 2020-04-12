@@ -20,4 +20,6 @@ The file [tensornet_simple.ipynb](tensornet_simple.ipynb) demonstrates how to us
 The file [tensornet_advanced.ipynb](tensornet_advanced.ipynb) demonstrates the use of some advanced features that can be used during model training like
 - Plotting changes in validation accuracy and loss while model training
 - Displaying correct and incorrect predictions of a trained model
+- Using One Cycle Policy for training
+- Using LR Range Test to find the learning rate boundaries for the One Cycle Policy
 - Displaying Gradient-weighted Class Activation Maps (GradCAM)
