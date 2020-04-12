@@ -76,12 +76,11 @@ Documentation making for the library is currently in progress. So until a docume
 
 | Functionality  | Module Name |
 | ------- | ----- |
-| Training | train |
-| Validation | evaluate |
+| Training, Validation and LR scheduling | engine |
 | Dataset downloading and preprocessing | data |
 | GradCAM and GradCAM++ | gradcam |
-| Models, loss, optimizers, regularizers and callbacks | model |
-| CUDA, random seed and result analysis | utils |
+| Models, loss functions and optimizers | model |
+| CUDA setup and result analysis | utils |
 
 For a demo on how to use these modules, refer to the notebooks present in the [examples](https://github.com/shan18/TensorNet/tree/master/examples) directory.
 
