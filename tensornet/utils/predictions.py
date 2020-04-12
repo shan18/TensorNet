@@ -52,7 +52,7 @@ def get_predictions(model, loader, device, sample_count=25):
             images, labels = images.to(device), labels.to(device)  # Get samples
             output = model(images)  # Get trained model output
             pred = output.argmax(dim=1, keepdim=True)  # Get the index of the max log-probability
-            result = pred.eq(target.view_as(pred))
+            result = pred.eq(labels.view_as(pred))
 
             # Save correct and incorrect samples
             correct_complete = False
@@ -64,7 +64,7 @@ def get_predictions(model, loader, device, sample_count=25):
                             'id': i,
                             'image': img_batch[i],
                             'prediction': list(pred)[i],
-                            'label': list(target.view_as(pred))[i],
+                            'label': list(labels.view_as(pred))[i],
                         })
                     else:
                         correct_complete = True
@@ -74,7 +74,7 @@ def get_predictions(model, loader, device, sample_count=25):
                             'id': i,
                             'image': img_batch[i],
                             'prediction': list(pred)[i],
-                            'label': list(target.view_as(pred))[i],
+                            'label': list(labels.view_as(pred))[i],
                         })
                     else:
                         incorrect_complete = True
@@ -82,4 +82,4 @@ def get_predictions(model, loader, device, sample_count=25):
             if correct_complete and incorrect_complete:
                 break
     
-    return correct_samples, incorrect_complete
+    return correct_samples, incorrect_samples

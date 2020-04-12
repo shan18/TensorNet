@@ -11,9 +11,10 @@ class Dataset:
 
     def __init__(
         self, train_batch_size=1, val_batch_size=1, cuda=False,
-        num_workers=1, path=None, horizontal_flip_prob=0.0,
-        vertical_flip_prob=0.0, gaussian_blur_prob=0.0,
-        rotate_degree=0.0, cutout_prob=0.0
+        num_workers=1, path=None, padding=(0, 0), crop=(0, 0),
+        horizontal_flip_prob=0.0, vertical_flip_prob=0.0,
+        gaussian_blur_prob=0.0, rotate_degree=0.0, cutout_prob=0.0,
+        cutout_dim=(8, 8)
     ):
         """Initializes the dataset for loading.
 
@@ -28,6 +29,10 @@ class Dataset:
             path (str, optional): Path where dataset will be downloaded. If
                 no path provided, data will be downloaded in a pre-defined
                 directory. (default: None)
+            padding (tuple, optional): Pad the image if the image size is less
+                than the specified dimensions (height, width). (default: (0, 0))
+            crop (tuple, optional): Randomly crop the image with the specified
+                dimensions (height, width). (default: (0, 0))
             horizontal_flip_prob (float, optional): Probability of an image
                 being horizontally flipped. (default: 0)
             vertical_flip_prob (float, optional): Probability of an image
@@ -38,6 +43,8 @@ class Dataset:
                 augmentation. (default: 0)
             cutout_prob (float, optional): Probability that cutout will be
                 performed. (default: 0)
+            cutout_dim (tuple, optional): Dimensions of the cutout box
+                (height, width). (default: (8, 8))
         """
         
         self.cuda = cuda
@@ -50,11 +57,14 @@ class Dataset:
         self.class_values = None
 
         # Set data augmentation parameters
+        self.padding = padding
+        self.crop = crop
         self.horizontal_flip_prob = horizontal_flip_prob
         self.vertical_flip_prob = vertical_flip_prob
         self.gaussian_blur_prob = gaussian_blur_prob
         self.rotate_degree = rotate_degree
         self.cutout_prob = cutout_prob
+        self.cutout_dim = cutout_dim
 
         # Download sample data
         # This is done to get the image size
@@ -88,13 +98,14 @@ class Dataset:
 
         if train:
             args['train'] = True
+            args['padding'] = self.padding
+            args['crop'] = self.crop
             args['horizontal_flip_prob'] = self.horizontal_flip_prob
             args['vertical_flip_prob'] = self.vertical_flip_prob
             args['gaussian_blur_prob'] = self.gaussian_blur_prob
             args['rotate_degree'] = self.rotate_degree
             args['cutout_prob'] = self.cutout_prob
-            args['cutout_height'] = self.image_size[1] // 2
-            args['cutout_width'] = self.image_size[2] // 2
+            args['cutout_dim'] = self.cutout_dim
 
         return Transformations(**args)
     
@@ -111,11 +122,6 @@ class Dataset:
             Downloaded dataset.
         """
         raise NotImplementedError
-    
-    @property
-    def classes(self):
-        """Return list of classes in the dataset."""
-        return self.class_values
     
     def data(self, train=True):
         """Return data based on train mode.
@@ -178,25 +184,6 @@ class Dataset:
 
 class MNIST(Dataset):
     """Load MNIST Dataset."""
-
-    def __init__(
-        self, train_batch_size=1, val_batch_size=1, cuda=False,
-        num_workers=1, path=None, horizontal_flip_prob=0.0,
-        vertical_flip_prob=0.0, gaussian_blur_prob=0.0,
-        rotate_degree=0.0, cutout_prob=0.0
-    ):
-        super(CIFAR10, self).__init__(
-            train_batch_size,
-            val_batch_size,
-            cuda,
-            num_workers,
-            path,
-            horizontal_flip_prob,
-            vertical_flip_prob,
-            gaussian_blur_prob,
-            rotate_degree,
-            cutout_prob,
-        )
     
     def _download(self, train=True, apply_transform=True):
         transform = None
@@ -220,27 +207,11 @@ class MNIST(Dataset):
 
 class CIFAR10(Dataset):
     """Load CIFAR-10 Dataset."""
-
-    def __init__(
-        self, train_batch_size=1, val_batch_size=1, cuda=False,
-        num_workers=1, path=None, horizontal_flip_prob=0.0,
-        vertical_flip_prob=0.0, gaussian_blur_prob=0.0,
-        rotate_degree=0.0, cutout_prob=0.0
-    ):
-        super(CIFAR10, self).__init__(
-            train_batch_size,
-            val_batch_size,
-            cuda,
-            num_workers,
-            path,
-            horizontal_flip_prob,
-            vertical_flip_prob,
-            gaussian_blur_prob,
-            rotate_degree,
-            cutout_prob,
-        )
-
-        self.class_values = (
+    
+    @property
+    def classes(self):
+        """Return list of classes in the dataset."""
+        return (
             'plane', 'car', 'bird', 'cat', 'deer',
             'dog', 'frog', 'horse', 'ship', 'truck'
         )

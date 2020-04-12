@@ -8,13 +8,18 @@ class Transformations:
     """Wrapper class to pass on albumentaions transforms into PyTorch."""
 
     def __init__(
-        self, horizontal_flip_prob=0.0, vertical_flip_prob=0.0, gaussian_blur_prob=0.0,
-        rotate_degree=0.0, cutout_prob=0.0, cutout_height=0, cutout_width=0,
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), train=True
+        self, padding=(0, 0), crop=(0, 0), horizontal_flip_prob=0.0,
+        vertical_flip_prob=0.0, gaussian_blur_prob=0.0, rotate_degree=0.0,
+        cutout_prob=0.0, cutout_dim=(8, 8), mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5), train=True
     ):
         """Create data transformation pipeline.
         
         Args:
+            padding (tuple, optional): Pad the image if the image size is less
+                than the specified dimensions (height, width). (default= (0, 0))
+            crop (tuple, optional): Randomly crop the image with the specified
+                dimensions (height, width). (default: (0, 0))
             horizontal_flip_prob (float, optional): Probability of an image
                 being horizontally flipped. (default: 0)
             vertical_flip_prob (float, optional): Probability of an image
@@ -25,16 +30,20 @@ class Transformations:
                 augmentation. (default: 0)
             cutout_prob (float, optional): Probability that cutout will be
                 performed. (default: 0)
-            cutout_height (int, optional): Max height of the cutout box.
-                (default: 0)
-            cutout_width (int, optional): Max width of the cutout box.
-                (default: 0)
+            cutout_dim (tuple, optional): Dimensions of the cutout box (height, width).
+                (default: (8, 8))
             mean (float or tuple, optional): Dataset mean. (default: 0.5 for each channel)
             std (float or tuple, optional): Dataset standard deviation. (default: 0.5 for each channel)
         """
         transforms_list = []
 
         if train:
+            if sum(padding) > 0:
+                transforms_list += [A.PadIfNeeded(
+                    min_height=padding[0], min_width=padding[1], always_apply=True
+                )]
+            if sum(crop) > 0:
+                transforms_list += [A.RandomCrop(crop[0], crop[1], always_apply=True)]
             if horizontal_flip_prob > 0:  # Horizontal Flip
                 transforms_list += [A.HorizontalFlip(p=horizontal_flip_prob)]
             if vertical_flip_prob > 0:  # Vertical Flip
@@ -50,7 +59,7 @@ class Transformations:
                     fill_value = tuple([x * 255.0 for x in mean])
                 transforms_list += [A.CoarseDropout(
                     p=cutout_prob, max_holes=1, fill_value=fill_value,
-                    max_height=cutout_height, max_width=cutout_width, min_height=1, min_width=1
+                    max_height=cutout_dim[0], max_width=cutout_dim[1]
                 )]
         
         transforms_list += [
@@ -112,3 +121,33 @@ def data_loader(data, shuffle=True, batch_size=1, num_workers=1, cuda=False):
         loader_args['pin_memory'] = True
     
     return torch.utils.data.DataLoader(data, **loader_args)
+
+
+class InfiniteDataLoader:
+    """Create infinite loop in a data loader.
+
+    Args:
+        data_loader (torch.utils.data.DataLoader): DataLoader object.
+        auto_reset (bool, optional): Create an infinite loop data loader.
+            (default: True)
+    """
+
+    def __init__(self, data_loader, auto_reset=True):
+        self.data_loader = data_loader
+        self.auto_reset = auto_reset
+        self._iterator = iter(data_loader)
+
+    def __next__(self):
+        # Get a new set of inputs and labels
+        try:
+            data, target = next(self._iterator)
+        except StopIteration:
+            if not self.auto_reset:
+                raise
+            self._iterator = iter(self.data_loader)
+            data, target = next(self._iterator)
+
+        return data, target
+
+    def get_batch(self):
+        return next(self)

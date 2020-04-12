@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from tensornet.model.base_model import BaseModel
+
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -37,7 +39,7 @@ class BasicBlock(nn.Module):
         return out
 
 
-class ResNet(nn.Module):
+class ResNet(BaseModel):
 
     def __init__(self, block, num_blocks, num_classes=10):
         super(ResNet, self).__init__()

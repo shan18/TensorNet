@@ -1,7 +1,7 @@
 # TensorNet
 
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/shan18/TensorNet/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.9-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.1-blue.svg)]()
 
 TensorNet is a high-level deep learning library built on top of PyTorch.
 
@@ -35,10 +35,11 @@ TensorNet currently supports the following features
   - Regularizers
     - L1 regularization
     - L2 regularization
-  - Callbacks
+  - LR Schedulers
     - Step LR
     - Reduce LR on Plateau
-  - LR Finder
+    - One Cycle Policy
+  - LR Range Test
 - Model training and validation
 - Datasets (data is is returned via data loaders)
   - CIFAR10
