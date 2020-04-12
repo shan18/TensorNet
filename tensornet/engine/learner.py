@@ -156,8 +156,12 @@ class Learner:
             ('loss', round(loss, 2)), ('accuracy', round(accuracy, 2))
         ])
     
-    def validate(self):
-        """Validate an epoch of model training."""
+    def validate(self, verbose=True):
+        """Validate an epoch of model training.
+
+        Args:
+            verbose: Print validation loss and accuracy.
+        """
 
         self.model.eval()
         val_loss = 0
@@ -178,9 +182,10 @@ class Learner:
         self.val_losses.append(val_loss)
         self.val_accuracies.append(val_accuracy)
 
-        print(
-            f'Validation set: Average loss: {val_loss:.4f}, Accuracy: {correct}/{len(self.val_loader.dataset)} ({val_accuracy:.2f}%)\n'
-        )
+        if verbose:
+            print(
+                f'Validation set: Average loss: {val_loss:.4f}, Accuracy: {val_accuracy:.2f}%\n'
+            )
     
     def fit(self):
         """Perform model training."""

@@ -114,7 +114,7 @@ class LRFinder:
         start_lr=None,
         end_lr=10,
         step_mode='exp',
-        smooth_f=0.05,
+        smooth_f=0.0,
         diverge_th=5,
     ):
         """Performs the learning rate range test.
@@ -139,7 +139,7 @@ class LRFinder:
                 linear or exponential ('linear', 'exp'). (default: 'exp')
             smooth_f (float, optional): The metric smoothing factor within the [0, 1]
                 interval. Disabled if set to 0, otherwise the metric is smoothed using
-                exponential smoothing. (default: 0.05)
+                exponential smoothing. (default: 0.0)
             diverge_th (int, optional): The test is stopped when the metric surpasses the
                 threshold: diverge_th * best_metric. To disable, set it to 0. (default: 5)
         """
@@ -152,9 +152,6 @@ class LRFinder:
         self.history = {'lr': [], 'metric': []}
         self.best_metric = None
         self.best_lr = None
-
-        # Move the model to the proper device
-        self.model.to(self.device)
 
         # Check if the optimizer is already attached to a scheduler
         self._check_for_scheduler()
@@ -190,7 +187,7 @@ class LRFinder:
                 print(f'{mode.title()} {iteration + 1}:')
             self._train_model(mode, train_iterator)
             if val_loader:
-                self.learner.validate()
+                self.learner.validate(verbose=False)
             
             # Get metric value
             metric_value = self._get_metric(val_loader)
@@ -250,7 +247,7 @@ class LRFinder:
     
     def _train_model(self, mode, train_iterator):
         if mode == 'iteration':
-            self.model.train()
+            self.learner.model.train()
             data, targets = train_iterator.get_batch()
             loss = self.learner.train_batch(data, targets)
             accuracy = 100 * self.learner.train_correct / self.learner.train_processed
