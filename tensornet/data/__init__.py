@@ -1,1 +1,1 @@
-from .dataset import CIFAR10, MNIST
+from .datasets import CIFAR10, MNIST

@@ -1,12 +1,11 @@
+import os
 import torch
-import numpy as np
 
-from tensornet.data.downloader import download_mnist, download_cifar10
 from tensornet.data.processing import Transformations, data_loader
 from tensornet.data.utils import unnormalize, normalize
 
 
-class Dataset:
+class BaseDataset:
     """Loads a dataset."""
 
     def __init__(
@@ -53,6 +52,11 @@ class Dataset:
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size
 
+        if self.path is None:
+            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')
+        if not os.path.exists(self.path):
+            os.makedirs(self.path) 
+
         # Define classes present in the dataset
         self.class_values = None
 
@@ -69,6 +73,8 @@ class Dataset:
         # Download sample data
         # This is done to get the image size
         # and mean and std of the dataset
+        
+        # TODO: Remove dependency on sample_data, it uses a lot of memory
         self.sample_data = self._download(apply_transform=False)
 
         # Set training data
@@ -122,6 +128,14 @@ class Dataset:
             Downloaded dataset.
         """
         raise NotImplementedError
+    
+    @property
+    def mean(self):
+        return tuple([0.5, 0.5, 0.5])
+    
+    @property
+    def std(self):
+        return tuple([0.5, 0.5, 0.5])
     
     def data(self, train=True):
         """Return data based on train mode.
@@ -180,57 +194,3 @@ class Dataset:
         return data_loader(
             self.train_data, **loader_args
         ) if train else data_loader(self.val_data, **loader_args)
-
-
-class MNIST(Dataset):
-    """Load MNIST Dataset."""
-    
-    def _download(self, train=True, apply_transform=True):
-        transform = None
-        if apply_transform:
-            transform = self.train_transform if train else self.val_transform
-        return download_mnist(self.path, train=train, transform=transform)
-    
-    @property
-    def image_size(self):
-        """Return shape of data i.e. image size."""
-        return self.sample_data.data[0].unsqueeze(0).numpy().shape
-    
-    @property
-    def mean(self):
-        return np.mean(self.sample_data.data.numpy()) / 255
-    
-    @property
-    def std(self):
-        return np.std(self.sample_data.data.numpy()) / 255
-
-
-class CIFAR10(Dataset):
-    """Load CIFAR-10 Dataset."""
-    
-    @property
-    def classes(self):
-        """Return list of classes in the dataset."""
-        return (
-            'plane', 'car', 'bird', 'cat', 'deer',
-            'dog', 'frog', 'horse', 'ship', 'truck'
-        )
-    
-    def _download(self, train=True, apply_transform=True):
-        transform = None
-        if apply_transform:
-            transform = self.train_transform if train else self.val_transform
-        return download_cifar10(self.path, train=train, transform=transform)
-    
-    @property
-    def image_size(self):
-        """Return shape of data i.e. image size."""
-        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
-    
-    @property
-    def mean(self):
-        return tuple(np.mean(self.sample_data.data, axis=(0, 1, 2)) / 255)
-    
-    @property
-    def std(self):
-        return tuple(np.std(self.sample_data.data, axis=(0, 1, 2)) / 255)
