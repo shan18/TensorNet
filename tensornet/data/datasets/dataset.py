@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 
 from tensornet.data.processing import Transformations, data_loader
@@ -55,10 +56,7 @@ class BaseDataset:
         if self.path is None:
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')
         if not os.path.exists(self.path):
-            os.makedirs(self.path) 
-
-        # Define classes present in the dataset
-        self.class_values = None
+            os.makedirs(self.path)
 
         # Set data augmentation parameters
         self.padding = padding
@@ -74,8 +72,12 @@ class BaseDataset:
         # This is done to get the image size
         # and mean and std of the dataset
         
-        # TODO: Remove dependency on sample_data, it uses a lot of memory
         self.sample_data = self._download(apply_transform=False)
+        self.image_size = self._get_image_size()
+        self.classes = self._get_classes()
+        self.mean = self._get_mean()
+        self.std = self._get_std()
+        del self.sample_data
 
         # Set training data
         self.train_transform = self._transform()
@@ -128,13 +130,19 @@ class BaseDataset:
             Downloaded dataset.
         """
         raise NotImplementedError
+
+    def _get_image_size(self):
+        """Return shape of data i.e. image size."""
+        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
     
-    @property
-    def mean(self):
+    def __get_classes(self):
+        """Get list of classes present in the dataset."""
+        raise NotImplementedError
+    
+    def _get_mean(self):
         return tuple([0.5, 0.5, 0.5])
     
-    @property
-    def std(self):
+    def _get_std(self):
         return tuple([0.5, 0.5, 0.5])
     
     def data(self, train=True):

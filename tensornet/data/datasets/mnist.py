@@ -16,15 +16,18 @@ class MNIST(BaseDataset):
             self.path, train=train, download=True, transform=transform
         )
     
-    @property
-    def image_size(self):
+    def _get_classes(self):
+        """Return list of classes in the dataset."""
+        return tuple([
+            str(x) for x in range(10)
+        ])
+    
+    def _get_image_size(self):
         """Return shape of data i.e. image size."""
         return self.sample_data.data[0].unsqueeze(0).numpy().shape
     
-    @property
-    def mean(self):
+    def _get_mean(self):
         return np.mean(self.sample_data.data.numpy()) / 255
     
-    @property
-    def std(self):
+    def _get_std(self):
         return np.std(self.sample_data.data.numpy()) / 255

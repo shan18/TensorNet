@@ -16,11 +16,6 @@ class TinyImageNet(BaseDataset):
 
     # TODO: Calculate mean and std for dataset
     
-    @property
-    def classes(self):
-        """Return list of classes in the dataset."""
-        return self.sample_data.classes
-    
     def _download(self, train=True, apply_transform=True):
         if not self.path.endswith('tinyimagenet'):
             self.path = os.path.join(self.path, 'tinyimagenet')
@@ -31,10 +26,13 @@ class TinyImageNet(BaseDataset):
             self.path, train=train, transform=transform
         )
     
-    @property
-    def image_size(self):
+    def _get_image_size(self):
         """Return shape of data i.e. image size."""
-        return np.array(self.sample_data.data[0]).shape
+        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
+    
+    def _get_classes(self):
+        """Return list of classes in the dataset."""
+        return self.sample_data.classes
 
 
 class TinyImageNetDataset(Dataset):

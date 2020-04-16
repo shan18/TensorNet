@@ -8,8 +8,7 @@ from tensornet.data.datasets.dataset import BaseDataset
 class CIFAR10(BaseDataset):
     """Load CIFAR-10 Dataset."""
     
-    @property
-    def classes(self):
+    def _get_classes(self):
         """Return list of classes in the dataset."""
         return (
             'plane', 'car', 'bird', 'cat', 'deer',
@@ -24,15 +23,8 @@ class CIFAR10(BaseDataset):
             self.path, train=train, download=True, transform=transform
         )
     
-    @property
-    def image_size(self):
-        """Return shape of data i.e. image size."""
-        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
-    
-    @property
-    def mean(self):
+    def _get_mean(self):
         return tuple(np.mean(self.sample_data.data, axis=(0, 1, 2)) / 255)
     
-    @property
-    def std(self):
+    def _get_std(self):
         return tuple(np.std(self.sample_data.data, axis=(0, 1, 2)) / 255)
