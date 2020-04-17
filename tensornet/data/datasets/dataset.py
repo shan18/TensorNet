@@ -11,7 +11,7 @@ class BaseDataset:
 
     def __init__(
         self, train_batch_size=1, val_batch_size=1, cuda=False,
-        num_workers=1, path=None, padding=(0, 0), crop=(0, 0),
+        num_workers=1, path=None, train_split=0.7, padding=(0, 0), crop=(0, 0),
         horizontal_flip_prob=0.0, vertical_flip_prob=0.0,
         gaussian_blur_prob=0.0, rotate_degree=0.0, cutout_prob=0.0,
         cutout_dim=(8, 8)
@@ -29,6 +29,9 @@ class BaseDataset:
             path (str, optional): Path where dataset will be downloaded. If
                 no path provided, data will be downloaded in a pre-defined
                 directory. (default: None)
+            train_split (float, optional): Fraction of dataset to assign
+                for training. This parameter will not work for MNIST and
+                CIFAR-10 datasets. (default: 0.7)
             padding (tuple, optional): Pad the image if the image size is less
                 than the specified dimensions (height, width). (default: (0, 0))
             crop (tuple, optional): Randomly crop the image with the specified
@@ -50,6 +53,7 @@ class BaseDataset:
         self.cuda = cuda
         self.num_workers = num_workers
         self.path = path
+        self.train_split = train_split
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size
 

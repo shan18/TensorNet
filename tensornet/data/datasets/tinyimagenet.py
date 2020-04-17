@@ -32,7 +32,7 @@ class TinyImageNet(BaseDataset):
         if apply_transform:
             transform = self.train_transform if train else self.val_transform
         return TinyImageNetDataset(
-            self.path, train=train, transform=transform
+            self.path, train=train, train_split=self.train_split, transform=transform
         )
     
     def _get_image_size(self):
