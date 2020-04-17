@@ -133,16 +133,18 @@ class BaseDataset:
 
     def _get_image_size(self):
         """Return shape of data i.e. image size."""
-        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
+        raise NotImplementedError
     
     def __get_classes(self):
         """Get list of classes present in the dataset."""
         raise NotImplementedError
     
     def _get_mean(self):
+        """Returns mean of the entire dataset."""
         return tuple([0.5, 0.5, 0.5])
     
     def _get_std(self):
+        """Returns standard deviation of the entire dataset."""
         return tuple([0.5, 0.5, 0.5])
     
     def data(self, train=True):

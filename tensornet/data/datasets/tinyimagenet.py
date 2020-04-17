@@ -13,10 +13,19 @@ from tensornet.data.datasets.dataset import BaseDataset
 
 class TinyImageNet(BaseDataset):
     """Load Tiny ImageNet Dataset."""
-
-    # TODO: Calculate mean and std for dataset
     
     def _download(self, train=True, apply_transform=True):
+        """Download dataset.
+
+        Args:
+            train (bool, optional): True for training data.
+                (default: True)
+            apply_transform (bool, optional): True if transform
+                is to be applied on the dataset. (default: True)
+        
+        Returns:
+            Downloaded dataset.
+        """
         if not self.path.endswith('tinyimagenet'):
             self.path = os.path.join(self.path, 'tinyimagenet')
         transform = None
@@ -33,11 +42,35 @@ class TinyImageNet(BaseDataset):
     def _get_classes(self):
         """Return list of classes in the dataset."""
         return self.sample_data.classes
+    
+    def _get_mean(self):
+        """Returns mean of the entire dataset."""
+        return tuple([0.5, 0.5, 0.5])
+    
+    def _get_std(self):
+        """Returns standard deviation of the entire dataset."""
+        return tuple([0.5, 0.5, 0.5])
 
 
 class TinyImageNetDataset(Dataset):
+    """Load Tiny ImageNet Dataset."""
 
     def __init__(self, path, train=True, train_split=0.7, download=True, random_seed=1, transform=None):
+        """Initializes the dataset for loading.
+
+        Args:
+            path (str): Path where dataset will be downloaded.
+            train (bool, optional): True for training data. (default: True)
+            train_split (float, optional): Fraction of dataset to assign
+                for training. (default: 0.7)
+            download (bool, optional): If True, dataset will be downloaded.
+                (default: True)
+            random_seed (int, optional): Random seed value. This is required
+                for splitting the data into training and validation datasets.
+                (default: 1)
+            transform (optional): Transformations to apply on the dataset.
+                (default: None)
+        """
         super(TinyImageNetDataset, self).__init__()
         
         self.path = path
@@ -62,9 +95,18 @@ class TinyImageNetDataset(Dataset):
         self._image_indices = self._image_indices[:split_idx] if train else self._image_indices[split_idx:]
     
     def __len__(self):
+        """Returns length of the dataset."""
         return len(self._image_indices)
     
     def __getitem__(self, index):
+        """Fetch an item from the dataset.
+
+        Args:
+            index (int): Index of the item to fetch.
+        
+        Returns:
+            An image and its corresponding label.
+        """
         image_index = self._image_indices[index]
         
         image = self.data[image_index]
@@ -74,6 +116,7 @@ class TinyImageNetDataset(Dataset):
         return image, self.targets[image_index]
     
     def __repr__(self):
+        """Representation string for the dataset object."""
         head = 'Dataset TinyImageNet'
         body = ['Number of datapoints: {}'.format(self.__len__())]
         if self.path is not None:
@@ -84,14 +127,17 @@ class TinyImageNetDataset(Dataset):
         lines = [head] + [' ' * 4 + line for line in body]
         return '\n'.join(lines)
     
-    @property
-    def classes(self):
-        return tuple(x[1]['name'] for x in sorted(self._class_ids.items(), key=lambda y: y[1]['id']))
-    
     def _validate_params(self):
         """Validate input parameters."""
         if self.train_split > 1:
             raise ValueError('train_split must be less than 1')
+    
+    @property
+    def classes(self):
+        """List of classes present in the dataset."""
+        return tuple(x[1]['name'] for x in sorted(
+            self._class_ids.items(), key=lambda y: y[1]['id']
+        ))
     
     def _get_class_map(self):
         """Create a mapping from class id to the class name."""
@@ -112,6 +158,14 @@ class TinyImageNetDataset(Dataset):
         return class_ids
     
     def _load_image(self, image_path):
+        """Load an image from the dataset.
+
+        Args:
+            image_path (str): Path of the image.
+        
+        Returns:
+            PIL object of the image.
+        """
         image = Image.open(image_path)
 
         # Convert grayscale image to RGB
@@ -150,6 +204,7 @@ class TinyImageNetDataset(Dataset):
         return data, targets
     
     def download(self):
+        """Download the data if it does not exist."""
         if not os.path.exists(self.path):
             print('Downloading dataset...')
             r = requests.get('http://cs231n.stanford.edu/tiny-imagenet-200.zip', stream=True)

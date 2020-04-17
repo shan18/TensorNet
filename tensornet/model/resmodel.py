@@ -27,6 +27,14 @@ class ResidualBlock(nn.Module):
         )
     
     def forward(self, x):
+        """This function defines the forward pass of the block.
+
+        Args:
+            x: Input.
+        
+        Returns:
+            Model output.
+        """
         x = self.layer(x)
         if not self.res_block is None:
             x = x + self.res_block(x)
@@ -54,6 +62,14 @@ class ResModel(BaseModel):
         self.linear = nn.Linear(512, 10)
     
     def forward(self, x):
+        """This function defines the forward pass of the model.
+
+        Args:
+            x: Input.
+        
+        Returns:
+            Model output.
+        """
         x = self.prep_layer(x)
         x = self.block_layers(x)
         x = self.pool(x)
