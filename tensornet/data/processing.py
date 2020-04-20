@@ -84,8 +84,9 @@ class Transformations:
         Returns:
             Transformed image.
         """
-
-        image = np.array(image)
+        if not isinstance(image, np.ndarray):
+            image = np.array(image)
+            
         image = self.transform(image=image)['image']
 
         if len(image.size()) == 2:
