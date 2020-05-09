@@ -71,21 +71,15 @@ class BaseDataset:
         self.rotate_degree = rotate_degree
         self.cutout_prob = cutout_prob
         self.cutout_dim = cutout_dim
-
-        # Download sample data
-        # This is done to get the image size
-        # and mean and std of the dataset
         
-        self.sample_data = self._download(apply_transform=False)
         self.image_size = self._get_image_size()
-        self.classes = self._get_classes()
         self.mean = self._get_mean()
         self.std = self._get_std()
-        del self.sample_data
 
         # Set training data
         self.train_transform = self._transform()
         self.train_data = self._download()
+        self.classes = self._get_classes()
 
         # Set validation data
         self.val_transform = self._transform(train=False)
@@ -141,15 +135,15 @@ class BaseDataset:
     
     def __get_classes(self):
         """Get list of classes present in the dataset."""
-        raise NotImplementedError
+        return None
     
     def _get_mean(self):
         """Returns mean of the entire dataset."""
-        return tuple([0.5, 0.5, 0.5])
+        return (0.5, 0.5, 0.5)
     
     def _get_std(self):
         """Returns standard deviation of the entire dataset."""
-        return tuple([0.5, 0.5, 0.5])
+        return (0.5, 0.5, 0.5)
     
     def data(self, train=True):
         """Return data based on train mode.

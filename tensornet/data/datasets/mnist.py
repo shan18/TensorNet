@@ -29,7 +29,7 @@ class MNIST(BaseDataset):
     
     def _get_image_size(self):
         """Return shape of data i.e. image size."""
-        return self.sample_data.data[0].unsqueeze(0).numpy().shape
+        return (1, 28, 28)
     
     def _get_classes(self):
         """Return list of classes in the dataset."""
@@ -39,8 +39,8 @@ class MNIST(BaseDataset):
     
     def _get_mean(self):
         """Returns mean of the entire dataset."""
-        return np.mean(self.sample_data.data.numpy()) / 255
+        return 0.1307
     
     def _get_std(self):
         """Returns standard deviation of the entire dataset."""
-        return np.std(self.sample_data.data.numpy()) / 255
+        return 0.3081

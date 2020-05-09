@@ -38,23 +38,23 @@ class TinyImageNet(BaseDataset):
     
     def _get_image_size(self):
         """Return shape of data i.e. image size."""
-        return np.transpose(self.sample_data.data[0], (2, 0, 1)).shape
+        return (3, 64, 64)
     
     def _get_classes(self):
         """Return list of classes in the dataset."""
-        return self.sample_data.classes
+        return self.train_data.classes
     
     def _get_mean(self):
         """Returns mean of the entire dataset."""
-        return tuple([0.5, 0.5, 0.5])
+        return (0.4914, 0.4822, 0.4465)
     
     def _get_std(self):
         """Returns standard deviation of the entire dataset."""
-        return tuple([0.5, 0.5, 0.5])
+        return (0.2023, 0.1994, 0.2010)
 
 
 class TinyImageNetDataset(Dataset):
-    """Load Tiny ImageNet Dataset."""
+    """Create Tiny ImageNet Dataset."""
 
     def __init__(self, path, train=True, train_split=0.7, download=True, random_seed=1, transform=None):
         """Initializes the dataset for loading.
