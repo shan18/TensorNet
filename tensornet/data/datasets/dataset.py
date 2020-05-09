@@ -72,9 +72,16 @@ class BaseDataset:
         self.cutout_prob = cutout_prob
         self.cutout_dim = cutout_dim
         
+        # Get dataset statistics
         self.image_size = self._get_image_size()
         self.mean = self._get_mean()
         self.std = self._get_std()
+
+        # Get data
+        self._split_data()
+    
+    def _split_data(self):
+        """Split data into training and validation set."""
 
         # Set training data
         self.train_transform = self._transform()
@@ -85,12 +92,14 @@ class BaseDataset:
         self.val_transform = self._transform(train=False)
         self.val_data = self._download(train=False)
     
-    def _transform(self, train=True):
+    def _transform(self, train=True, data_type=None):
         """Define data transformations
         
         Args:
             train (bool, optional): If True, download training data
                 else download the test data. (default: True)
+            data_type (str, optional): Type of image. Required only when
+                dataset has multiple types of images. (default: None)
         
         Returns:
             Returns data transforms based on the training mode.
@@ -101,6 +110,10 @@ class BaseDataset:
             'std': self.std,
             'train': False
         }
+
+        if not data_type is None:
+            args['mean'] = self.mean[data_type]
+            args['std'] = self.std[data_type]
 
         if train:
             args['train'] = True
@@ -133,7 +146,7 @@ class BaseDataset:
         """Return shape of data i.e. image size."""
         raise NotImplementedError
     
-    def __get_classes(self):
+    def _get_classes(self):
         """Get list of classes present in the dataset."""
         return None
     

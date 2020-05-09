@@ -1,1 +1,1 @@
-from .datasets import CIFAR10, MNIST, TinyImageNet
+from .datasets import CIFAR10, MNIST, TinyImageNet, MODESTMuseum
