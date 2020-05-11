@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torchsummary
 
@@ -32,7 +33,7 @@ class BaseModel(nn.Module):
 
     def fit(
         self, train_loader, optimizer, criterion, device='cpu',
-        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None
+        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metric=None
     ):
         """Train the model.
 
@@ -51,9 +52,28 @@ class BaseModel(nn.Module):
             track (str, optional): Can be set to either 'epoch' or 'batch' and will
                 store the changes in loss and accuracy for each batch
                 or the entire epoch respectively. (default: 'epoch')
+            metric (str or tuple, optional): tuple or 'accuracy' for model evaluation. If
+                tuple, then first element is the metric name and second element is the
+                function for metric calculation. (default: None)
         """
         self.learner = Learner(
             self, optimizer, criterion, train_loader, device=device, epochs=epochs,
-            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks
+            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, metric=metric
         )
         self.learner.fit()
+    
+    def save(self, filepath, **kwargs):
+        """Save the model.
+
+        Args:
+            filepath (str): File in which the model will be saved.
+            **kwargs (optional): Additional parameters to save with the model.
+        """
+        if self.learner is None:
+            raise ValueError('Cannot save un-trained model.')
+
+        torch.save({
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.learner.optimizer.state_dict(),
+            **kwargs
+        }, filepath)

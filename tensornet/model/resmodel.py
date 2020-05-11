@@ -43,11 +43,11 @@ class ResidualBlock(nn.Module):
 
 class ResModel(BaseModel):
 
-    def __init__(self, block, res_block):
+    def __init__(self, block, res_block, num_classes, in_channels=3):
         super(ResModel, self).__init__()
 
         self.prep_layer = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(),
         )
@@ -59,7 +59,7 @@ class ResModel(BaseModel):
         )
         
         self.pool = nn.MaxPool2d(4, 4)
-        self.linear = nn.Linear(512, 10)
+        self.linear = nn.Linear(512, num_classes)
     
     def forward(self, x):
         """This function defines the forward pass of the model.
@@ -78,5 +78,5 @@ class ResModel(BaseModel):
         return x
 
 
-def ResidualModel():
-    return ResModel(ResidualBlock, BasicBlock)
+def ResidualModel(num_classes, in_channels=3):
+    return ResModel(ResidualBlock, BasicBlock, num_classes, in_channels=in_channels)

@@ -41,11 +41,11 @@ class BasicBlock(nn.Module):
 
 class ResNet(BaseModel):
 
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes, in_channels=3):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
@@ -83,5 +83,5 @@ class ResNet(BaseModel):
         return out
 
 
-def ResNet18(num_classes=10):
-    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes)
+def ResNet18(num_classes, in_channels=3):
+    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes, in_channels=in_channels)
