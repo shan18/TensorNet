@@ -75,45 +75,67 @@ class Learner:
             elif isinstance(callback, ModelCheckpoint):
                 self.checkpoint = callback
     
-    def _calc_accuracy(self, correct, total):
-        """Calculate accuracy."""
-        return round(100 * correct / total, 2)
-    
     def _setup_metric(self, metric):
         """Validate the evaluation metric passed to the class."""
+        self.metric_val = None
         if isinstance(metric, str):
             if metric != 'accuracy':
                 raise ValueError(f'Invalid metric {metric} specified.')
             else:
-                self.train_correct = 0  # Total number of correctly predicted samples so far
-                self.train_processed = 0  # Total number of predicted samples so far
+                self.correct = 0  # Total number of correctly predicted samples so far
+                self.processed = 0  # Total number of predicted samples so far
                 self.metric = metric
-                self.metric_fn = self._calc_accuracy
+                self.metric_fn = self._accuracy
         elif isinstance(metric, (list, tuple)):
             self.metric = metric[0]
             self.metric_fn = metric[1]
         else:
             raise ValueError('Invalid metric given.')
     
+    def _reset_metric(self):
+        """Reset metric params."""
+        self.metric_val = None
+        if self.metric == 'accuracy':
+            self.correct = 0
+            self.processed = 0
+    
+    def _accuracy(self, label, prediction):
+        """Calculate accuracy.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+        
+        Returns:
+            accuracy
+        """
+        pred_max = prediction.argmax(dim=1, keepdim=True)
+        self.correct += pred_max.eq(
+            label.view_as(pred_max)
+        ).sum().item()
+        self.processed += len(label)
+        self.metric_val = round(
+            100 * self.correct / self.processed, 2
+        )
+    
     def _get_pbar_values(self, **kwargs):
         return [
             (x, y) for x, y in kwargs.items()
         ]
 
-    def update_training_history(self, loss, eval_metric=None):
+    def update_training_history(self, loss):
         """Update the training history."""
         self.train_losses.append(loss)
-        if not eval_metric is None:
-            self.train_metric.append(eval_metric)
+        if self.metric_fn:
+            self.train_metric.append(self.metric_val)
     
     def reset_history(self):
         """Reset the training history"""
         self.train_losses = []
         self.train_metric = []
-        self.train_correct = 0
-        self.train_processed = 0
         self.val_losses = []
         self.val_metric = []
+        self._reset_metric()
     
     def train_batch(self, data, target):
         """Train the model on a batch of data.
@@ -134,10 +156,8 @@ class Learner:
         loss.backward()
         self.optimizer.step()
 
-        if self.metric == 'accuracy':
-            pred = y_pred.argmax(dim=1, keepdim=True)
-            self.train_correct += pred.eq(target.view_as(pred)).sum().item()
-            self.train_processed += len(data)
+        if self.metric_fn:
+            self.metric_fn(target, y_pred)
 
         # One Cycle Policy for learning rate
         if not self.lr_schedulers['one_cycle_policy'] is None:
@@ -157,18 +177,15 @@ class Learner:
             # Update Progress Bar
             pbar_values = [('loss', round(loss, 2))]
             if self.metric_fn:
-                eval_metric = self.metric_fn(self.train_correct, self.train_processed)
-                pbar_values.append((self.metric, eval_metric))
+                pbar_values.append((self.metric, self.metric_val))
             
             pbar.update(batch_idx, values=pbar_values)
             
         # Update training history
-        eval_metric = None
         pbar_values = [('loss', round(loss, 2))]
         if self.metric_fn:
-            eval_metric = self.metric_fn(self.train_correct, self.train_processed)
-            pbar_values.append((self.metric, eval_metric))
-        self.update_training_history(loss, eval_metric)
+            pbar_values.append((self.metric, self.metric_val))
+        self.update_training_history(loss)
         pbar.add(1, values=pbar_values)
 
     
@@ -184,15 +201,13 @@ class Learner:
             loss = self.train_batch(data, target)
 
             # Update Progress Bar
-            eval_metric = None
             pbar_values = [('loss', round(loss, 2))]
             if self.metric_fn:
-                eval_metric = self.metric_fn(self.train_correct, self.train_processed)
-                pbar_values.append((self.metric, eval_metric))
+                pbar_values.append((self.metric, self.metric_val))
             pbar.update(iteration, values=pbar_values)
             
             # Update training history
-            self.update_training_history(loss, eval_metric)
+            self.update_training_history(loss)
         
         pbar.add(1, values=pbar_values)
     
@@ -213,23 +228,19 @@ class Learner:
                 output = self.model(data)  # Get trained model output
                 val_loss += self.criterion(output, target).item()  # Sum up batch loss
 
-                if self.metric == 'accuracy':
-                    pred = output.argmax(dim=1, keepdim=True)  # Get the index of the max log-probability
-                    result = pred.eq(target.view_as(pred))
-                    correct += result.sum().item()
+                if self.metric_fn:
+                    self.metric_fn(target, output)
 
         val_loss /= len(self.val_loader.dataset)
         self.val_losses.append(val_loss)
 
-        eval_metric = None
         if self.metric_fn:
-            eval_metric = self.metric_fn(correct, len(self.val_loader.dataset))
-            self.val_metric.append(eval_metric)
+            self.val_metric.append(self.metric_val)
 
         if verbose:
             log = f'Validation set: Average loss: {val_loss:.4f}'
-            if not eval_metric is None:
-                log += f', {self.metric}: {eval_metric:.2f}'
+            if not self.metric_val is None:
+                log += f', {self.metric}: {self.metric_val:.2f}'
             log += '\n'
             print(log)
     
@@ -260,10 +271,12 @@ class Learner:
 
             # Train an epoch
             self.train_epoch()
+            self._reset_metric()
             
             # Validate the model
             if not self.val_loader is None:
                 self.validate()
+                self._reset_metric()
             
             # Save model checkpoint
             self.save_checkpoint(epoch)
