@@ -178,8 +178,6 @@ class Learner:
         self.model.train()
         pbar = ProgressBar(target=self.epochs, width=8)
         iterator = InfiniteDataLoader(self.train_loader)
-        correct = 0
-        processed = 0
         for iteration in range(self.epochs):
             # Train a batch
             data, target = iterator.get_batch()
