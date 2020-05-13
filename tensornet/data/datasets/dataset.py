@@ -170,7 +170,7 @@ class BaseDataset:
         data = self.train_data if train else self.val_data
         return data.data, data.targets
     
-    def unnormalize(self, image, transpose=False):
+    def unnormalize(self, image, transpose=False, data_type=None):
         """Un-normalize a given image.
 
         Args:
@@ -180,10 +180,14 @@ class BaseDataset:
                 be returned. This param is effective only when image is
                 a tensor. If tensor, the output will have channel number
                 as the last dim. (default: False)
+            data_type (str, optional): Type of image. Required only when
+                dataset has multiple types of images. (default: None)
         """
-        return unnormalize(image, self.mean, self.std, transpose)
+        mean = self.mean if data_type is None else self.mean[data_type]
+        std = self.std if data_type is None else self.std[data_type]
+        return unnormalize(image, mean, std, transpose)
     
-    def normalize(self, image, transpose=False):
+    def normalize(self, image, transpose=False, data_type=None):
         """Normalize a given image.
 
         Args:
@@ -193,8 +197,12 @@ class BaseDataset:
                 be returned. This param is effective only when image is
                 a tensor. If tensor, the output will have channel number
                 as the last dim. (default: False)
+            data_type (str, optional): Type of image. Required only when
+                dataset has multiple types of images. (default: None)
         """
-        return normalize(image, self.mean, self.std, transpose)
+        mean = self.mean if data_type is None else self.mean[data_type]
+        std = self.std if data_type is None else self.std[data_type]
+        return normalize(image, mean, std, transpose)
     
     def loader(self, train=True):
         """Create data loader.
