@@ -5,13 +5,13 @@ from tensornet.model.base_model import BaseModel
 
 class BasicNet(BaseModel):
 
-    def __init__(self, dropout_rate=0.0):
+    def __init__(self, num_classes, dropout_rate=0.0, in_channels=3):
         """This function instantiates all the model layers."""
 
         super(BasicNet, self).__init__()
 
         self.convblock1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),  # Input: 32x32x3 | Output: 32x32x32 | RF: 3x3
+            nn.Conv2d(in_channels=in_channels, out_channels=32, kernel_size=3, padding=1),  # Input: 32x32x3 | Output: 32x32x32 | RF: 3x3
             nn.ReLU(),
             nn.BatchNorm2d(32),
             nn.Dropout(dropout_rate),
@@ -81,7 +81,7 @@ class BasicNet(BaseModel):
         )  # Input: 4x4x64 | Output: 1x1x64 | RF: 108x108
 
         self.fc = nn.Sequential(
-            nn.Linear(64, 10)
+            nn.Linear(64, num_classes)
         )
     
     def forward(self, x):

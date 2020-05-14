@@ -71,32 +71,35 @@ class BaseDataset:
         self.rotate_degree = rotate_degree
         self.cutout_prob = cutout_prob
         self.cutout_dim = cutout_dim
-
-        # Download sample data
-        # This is done to get the image size
-        # and mean and std of the dataset
         
-        self.sample_data = self._download(apply_transform=False)
+        # Get dataset statistics
         self.image_size = self._get_image_size()
-        self.classes = self._get_classes()
         self.mean = self._get_mean()
         self.std = self._get_std()
-        del self.sample_data
+
+        # Get data
+        self._split_data()
+    
+    def _split_data(self):
+        """Split data into training and validation set."""
 
         # Set training data
         self.train_transform = self._transform()
         self.train_data = self._download()
+        self.classes = self._get_classes()
 
         # Set validation data
         self.val_transform = self._transform(train=False)
         self.val_data = self._download(train=False)
     
-    def _transform(self, train=True):
+    def _transform(self, train=True, data_type=None):
         """Define data transformations
         
         Args:
             train (bool, optional): If True, download training data
                 else download the test data. (default: True)
+            data_type (str, optional): Type of image. Required only when
+                dataset has multiple types of images. (default: None)
         
         Returns:
             Returns data transforms based on the training mode.
@@ -107,6 +110,10 @@ class BaseDataset:
             'std': self.std,
             'train': False
         }
+
+        if not data_type is None:
+            args['mean'] = self.mean[data_type]
+            args['std'] = self.std[data_type]
 
         if train:
             args['train'] = True
@@ -139,17 +146,17 @@ class BaseDataset:
         """Return shape of data i.e. image size."""
         raise NotImplementedError
     
-    def __get_classes(self):
+    def _get_classes(self):
         """Get list of classes present in the dataset."""
-        raise NotImplementedError
+        return None
     
     def _get_mean(self):
         """Returns mean of the entire dataset."""
-        return tuple([0.5, 0.5, 0.5])
+        return (0.5, 0.5, 0.5)
     
     def _get_std(self):
         """Returns standard deviation of the entire dataset."""
-        return tuple([0.5, 0.5, 0.5])
+        return (0.5, 0.5, 0.5)
     
     def data(self, train=True):
         """Return data based on train mode.
@@ -163,7 +170,7 @@ class BaseDataset:
         data = self.train_data if train else self.val_data
         return data.data, data.targets
     
-    def unnormalize(self, image, transpose=False):
+    def unnormalize(self, image, transpose=False, data_type=None):
         """Un-normalize a given image.
 
         Args:
@@ -173,10 +180,14 @@ class BaseDataset:
                 be returned. This param is effective only when image is
                 a tensor. If tensor, the output will have channel number
                 as the last dim. (default: False)
+            data_type (str, optional): Type of image. Required only when
+                dataset has multiple types of images. (default: None)
         """
-        return unnormalize(image, self.mean, self.std, transpose)
+        mean = self.mean if data_type is None else self.mean[data_type]
+        std = self.std if data_type is None else self.std[data_type]
+        return unnormalize(image, mean, std, transpose)
     
-    def normalize(self, image, transpose=False):
+    def normalize(self, image, transpose=False, data_type=None):
         """Normalize a given image.
 
         Args:
@@ -186,8 +197,12 @@ class BaseDataset:
                 be returned. This param is effective only when image is
                 a tensor. If tensor, the output will have channel number
                 as the last dim. (default: False)
+            data_type (str, optional): Type of image. Required only when
+                dataset has multiple types of images. (default: None)
         """
-        return normalize(image, self.mean, self.std, transpose)
+        mean = self.mean if data_type is None else self.mean[data_type]
+        std = self.std if data_type is None else self.std[data_type]
+        return normalize(image, mean, std, transpose)
     
     def loader(self, train=True):
         """Create data loader.
