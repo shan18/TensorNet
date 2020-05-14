@@ -33,7 +33,7 @@ class BaseModel(nn.Module):
 
     def fit(
         self, train_loader, optimizer, criterion, device='cpu',
-        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metric=None
+        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metrics=None
     ):
         """Train the model.
 
@@ -52,13 +52,12 @@ class BaseModel(nn.Module):
             track (str, optional): Can be set to either 'epoch' or 'batch' and will
                 store the changes in loss and accuracy for each batch
                 or the entire epoch respectively. (default: 'epoch')
-            metric (str or tuple, optional): tuple or 'accuracy' for model evaluation. If
-                tuple, then first element is the metric name and second element is the
-                function for metric calculation. (default: None)
+            metrics (list of str, optional): List of names of the metrics for model
+                evaluation. (default: None)
         """
         self.learner = Learner(
             self, optimizer, criterion, train_loader, device=device, epochs=epochs,
-            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, metric=metric
+            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, metrics=metrics
         )
         self.learner.fit()
     
