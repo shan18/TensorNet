@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.nn.functional as F
 
@@ -11,7 +12,7 @@ class Learner:
 
     def __init__(
         self, model, optimizer, criterion, train_loader, device='cpu',
-        epochs=1, val_loader=None, l1_factor=0.0, callbacks=None, metric=None
+        epochs=1, val_loader=None, l1_factor=0.0, callbacks=None, metrics=None
     ):
         """Train and validate the model.
 
@@ -29,9 +30,8 @@ class Learner:
             l1_factor (float, optional): L1 regularization factor. (default: 0)
             callbacks (list, optional): List of callbacks to be used during training.
                 (default: None)
-            metric (str or tuple, optional): tuple or 'accuracy' for model evaluation. If
-                tuple, then first element is the metric name and second element is the
-                function for metric calculation. (default: None)
+            metrics (list of str, optional): List of names of the metrics for model
+                evaluation. (default: None)
         """
         self.model = model
         self.optimizer = optimizer
@@ -41,11 +41,6 @@ class Learner:
         self.epochs = epochs
         self.val_loader = val_loader
         self.l1_factor = l1_factor
-
-        self.metric = None
-        self.metric_fn = None
-        if metric:
-            self._setup_metric(metric)
         
         self.lr_schedulers = {
             'step_lr': None,
@@ -58,10 +53,15 @@ class Learner:
 
         # Training
         self.train_losses = []  # Change in loss
-        self.train_metric = []  # Change in accuracy
+        self.train_metrics = {}  # Change in evaluation metric
 
         self.val_losses = []  # Change in loss
-        self.val_metric = []  # Change in accuracy
+        self.val_metrics = {}  # Change in evaluation metric
+
+        # Set evaluation metrics
+        self.metrics = {}
+        if metrics:
+            self._setup_metrics(metrics)
     
     def _setup_callbacks(self, callbacks):
         """Extract callbacks passed to the class."""
@@ -75,30 +75,6 @@ class Learner:
             elif isinstance(callback, ModelCheckpoint):
                 self.checkpoint = callback
     
-    def _setup_metric(self, metric):
-        """Validate the evaluation metric passed to the class."""
-        self.metric_val = None
-        if isinstance(metric, str):
-            if metric != 'accuracy':
-                raise ValueError(f'Invalid metric {metric} specified.')
-            else:
-                self.correct = 0  # Total number of correctly predicted samples so far
-                self.processed = 0  # Total number of predicted samples so far
-                self.metric = metric
-                self.metric_fn = self._accuracy
-        elif isinstance(metric, (list, tuple)):
-            self.metric = metric[0]
-            self.metric_fn = metric[1]
-        else:
-            raise ValueError('Invalid metric given.')
-    
-    def _reset_metric(self):
-        """Reset metric params."""
-        self.metric_val = None
-        if self.metric == 'accuracy':
-            self.correct = 0
-            self.processed = 0
-    
     def _accuracy(self, label, prediction):
         """Calculate accuracy.
         
@@ -109,33 +85,163 @@ class Learner:
         Returns:
             accuracy
         """
-        pred_max = prediction.argmax(dim=1, keepdim=True)
-        self.correct += pred_max.eq(
-            label.view_as(pred_max)
+        self.metrics['accuracy']['sum'] += prediction.eq(
+            label.view_as(prediction)
         ).sum().item()
-        self.processed += len(label)
-        self.metric_val = round(
-            100 * self.correct / self.processed, 2
+        self.metrics['accuracy']['num_steps'] += len(label)
+        self.metrics['accuracy']['value'] = round(
+            100 * self.metrics['accuracy']['sum'] / self.metrics['accuracy']['num_steps'], 2
         )
     
-    def _get_pbar_values(self, **kwargs):
-        return [
-            (x, y) for x, y in kwargs.items()
-        ]
+    def _pred_label_diff(self, label, prediction, rel=False):
+        """Calculate the difference between label and prediction.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+            rel (bool, optional): If True, return the relative
+                difference. (default: False)
+        
+        Returns:
+            Difference between label and prediction
+        """
+        # For numerical stability
+        valid_labels = label > 0.0001
+        _label = label[valid_labels]
+        _prediction = prediction[valid_labels]
+        valid_element_count = _label.size(0)
+
+        if valid_element_count > 0:
+            diff = torch.abs(_label - _prediction)
+            if rel:
+                diff = torch.div(diff, _label)
+            
+            return diff, valid_element_count
+
+    
+    def _rmse(self, label, prediction):
+        """Calculate Root Mean Square Error.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+        
+        Returns:
+            Root Mean Square Error
+        """
+        diff = self._pred_label_diff(label, prediction)
+        rmse = 0
+        if not diff is None:
+            rmse = math.sqrt(torch.sum(torch.pow(diff[0], 2)) / diff[1])
+        
+        self.metrics['rmse']['num_steps'] += label.size(0)
+        self.metrics['rmse']['sum'] += rmse * label.size(0)
+        self.metrics['rmse']['value'] = round(
+            self.metrics['rmse']['sum'] / self.metrics['rmse']['num_steps'], 3
+        )
+    
+    def _mae(self, label, prediction):
+        """Calculate Mean Average Error.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+        
+        Returns:
+            Mean Average Error
+        """
+        diff = self._pred_label_diff(label, prediction)
+        mae = 0
+        if not diff is None:
+            mae = torch.sum(diff[0]).item() / diff[1]
+        
+        self.metrics['mae']['num_steps'] += label.size(0)
+        self.metrics['mae']['sum'] += mae * label.size(0)
+        self.metrics['mae']['value'] = round(
+            self.metrics['mae']['sum'] / self.metrics['mae']['num_steps'], 3
+        )
+    
+    def _abs_rel(self, label, prediction):
+        """Calculate Absolute Relative Error.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+        
+        Returns:
+            Absolute Relative Error
+        """
+        diff = self._pred_label_diff(label, prediction, rel=True)
+        abs_rel = 0
+        if not diff is None:
+            abs_rel = torch.sum(diff[0]).item() / diff[1]
+        
+        self.metrics['abs_rel']['num_steps'] += label.size(0)
+        self.metrics['abs_rel']['sum'] += abs_rel * label.size(0)
+        self.metrics['abs_rel']['value'] = round(
+            self.metrics['abs_rel']['sum'] / self.metrics['abs_rel']['num_steps'], 3
+        )
+    
+    def _setup_metrics(self, metrics):
+        """Validate the evaluation metrics passed to the class."""
+        for metric in metrics:
+            metric_info = {'value': 0, 'sum': 0, 'num_steps': 0}
+            if metric == 'accuracy':
+                metric_info['func'] = self._accuracy
+            elif metric == 'rmse':
+                metric_info['func'] = self._rmse
+            elif metric == 'mae':
+                metric_info['func'] = self._mae
+            elif metric == 'abs_rel':
+                metric_info['func'] = self._abs_rel
+            
+            if 'func' in metric_info:
+                self.metrics[metric] = metric_info
+                self.train_metrics[metric] = []
+                self.val_metrics[metric] = []
+    
+    def _calculate_metrics(self, label, prediction):
+        """Update evaluation metric values.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+        """
+        # If predictions are ont-hot encoded
+        if label.size() != prediction.size():
+            prediction = prediction.argmax(dim=1, keepdim=True) * 1.0
+        
+        for _, info in self.metrics.items():
+            info['func'](label, prediction)
+    
+    def _reset_metrics(self):
+        """Reset metric params."""
+        for metric in self.metrics:
+            self.metrics[metric]['value'] = 0
+            self.metrics[metric]['sum'] = 0
+            self.metrics[metric]['num_steps'] = 0
+    
+    def _get_pbar_values(self, loss):
+        pbar_values = [('loss', round(loss, 2))]
+        if self.metrics:
+            for metric, info in self.metrics.items():
+                pbar_values.append((metric, info['value']))
+        return pbar_values
 
     def update_training_history(self, loss):
         """Update the training history."""
         self.train_losses.append(loss)
-        if self.metric_fn:
-            self.train_metric.append(self.metric_val)
+        for metric in self.metrics:
+            self.train_metrics[metric].append(self.metrics[metric]['value'])
     
     def reset_history(self):
         """Reset the training history"""
         self.train_losses = []
-        self.train_metric = []
         self.val_losses = []
-        self.val_metric = []
-        self._reset_metric()
+        for metric in self.metrics:
+            self.train_metrics[metric] = []
+            self.val_metrics[metric] = []
+        self._reset_metrics()
     
     def train_batch(self, data, target):
         """Train the model on a batch of data.
@@ -156,8 +262,7 @@ class Learner:
         loss.backward()
         self.optimizer.step()
 
-        if self.metric_fn:
-            self.metric_fn(target, y_pred)
+        self._calculate_metrics(target, y_pred)
 
         # One Cycle Policy for learning rate
         if not self.lr_schedulers['one_cycle_policy'] is None:
@@ -175,17 +280,12 @@ class Learner:
             loss = self.train_batch(data, target)
 
             # Update Progress Bar
-            pbar_values = [('loss', round(loss, 2))]
-            if self.metric_fn:
-                pbar_values.append((self.metric, self.metric_val))
-            
+            pbar_values = self._get_pbar_values(loss)
             pbar.update(batch_idx, values=pbar_values)
             
         # Update training history
-        pbar_values = [('loss', round(loss, 2))]
-        if self.metric_fn:
-            pbar_values.append((self.metric, self.metric_val))
         self.update_training_history(loss)
+        pbar_values = self._get_pbar_values(loss)
         pbar.add(1, values=pbar_values)
 
     
@@ -201,9 +301,7 @@ class Learner:
             loss = self.train_batch(data, target)
 
             # Update Progress Bar
-            pbar_values = [('loss', round(loss, 2))]
-            if self.metric_fn:
-                pbar_values.append((self.metric, self.metric_val))
+            pbar_values = self._get_pbar_values(loss)
             pbar.update(iteration, values=pbar_values)
             
             # Update training history
@@ -227,35 +325,34 @@ class Learner:
                 data, target = data.to(self.device), target.to(self.device)  # Get samples
                 output = self.model(data)  # Get trained model output
                 val_loss += self.criterion(output, target).item()  # Sum up batch loss
-
-                if self.metric_fn:
-                    self.metric_fn(target, output)
+                self._calculate_metrics(target, output)  # Calculate evaluation metrics
 
         val_loss /= len(self.val_loader.dataset)
         self.val_losses.append(val_loss)
 
-        if self.metric_fn:
-            self.val_metric.append(self.metric_val)
+        for metric, info in self.metrics.items():
+            self.val_metrics[metric].append(info['value'])
 
         if verbose:
             log = f'Validation set: Average loss: {val_loss:.4f}'
-            if not self.metric_val is None:
-                log += f', {self.metric}: {self.metric_val:.2f}'
+            for metric, info in self.metrics.items():
+                log += f', {metric}: {info["value"]}'
             log += '\n'
             print(log)
     
     def save_checkpoint(self, epoch=None):
         if not self.checkpoint is None:
             metric = None
+            params = {}
             if self.checkpoint.monitor == 'train_loss':
                 metric = self.train_losses[-1]
             elif self.checkpoint.monitor == 'val_loss':
                 metric = self.val_losses[-1]
-            elif self.metric_fn:
+            elif self.metrics:
                 if self.checkpoint.monitor.startswith('train_'):
-                    metric = self.train_metric[-1]
+                    metric = self.train_metrics[self.checkpoint.monitor.split('train_')[-1]][-1]
                 else:
-                    metric = self.val_metric[-1]
+                    metric = self.val_metrics[self.checkpoint.monitor.split('val_')[-1]][-1]
             else:
                 print('Invalid metric function, can\'t save checkpoint.')
                 return
@@ -271,12 +368,12 @@ class Learner:
 
             # Train an epoch
             self.train_epoch()
-            self._reset_metric()
+            self._reset_metrics()
             
             # Validate the model
             if not self.val_loader is None:
                 self.validate()
-                self._reset_metric()
+                self._reset_metrics()
             
             # Save model checkpoint
             self.save_checkpoint(epoch)

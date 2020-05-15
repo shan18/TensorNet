@@ -65,7 +65,7 @@ class ModelCheckpoint:
             self.monitor_op = np.greater
             self.best = -np.Inf
     
-    def __call__(self, model, current_value, epoch=None):
+    def __call__(self, model, current_value, epoch=None, **kwargs):
         """Compare the current value with the best value and save the model
         accordingly.
 
@@ -74,6 +74,7 @@ class ModelCheckpoint:
             optimizer (torch.optim): Optimizer for the model.
             current_value (float): Current value of the monitored quantity.
             epoch (int): Epoch count.
+            **kwargs: Other keyword arguments.
         """
 
         if self.monitor_op(current_value, self.best) or not self.save_best_only:
@@ -85,12 +86,9 @@ class ModelCheckpoint:
                     ckpt_name = f'model-{self.counter}.pt'
                     self.counter += 1
                 save_path = os.path.join(self.path, ckpt_name)
-            
-            # Update best value
-            self.best = current_value
 
             # Save model
-            params = {self.monitor: self.monitor}
+            params = {self.monitor: current_value, **kwargs}
             if not epoch is None:
                 params['epoch'] = epoch
             model.save(save_path, **params)
@@ -101,3 +99,6 @@ class ModelCheckpoint:
                 if self.save_best_only:
                     log = f'{self.monitor} improved from {self.best:.5f} to {current_value:.5f}. ' + log
                 print(log)
+
+            # Update best value
+            self.best = current_value
