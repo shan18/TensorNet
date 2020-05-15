@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchsummary
 
+from .utils.summary import summary as model_summary
 from tensornet.engine.learner import Learner
 
 
@@ -29,7 +30,7 @@ class BaseModel(nn.Module):
         Args:
             input_size (tuple): Size of input to the model.
         """
-        torchsummary.summary(self, input_size)
+        model_summary(self, input_size)
 
     def fit(
         self, train_loader, optimizer, criterion, device='cpu',
