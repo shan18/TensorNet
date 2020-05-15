@@ -1,8 +1,7 @@
 import numpy as np
 import torch
 import albumentations as A
-
-from .utils import to_tensor
+from albumentations.pytorch import ToTensorV2
 
 
 class Transformations:
@@ -68,6 +67,10 @@ class Transformations:
             # since there are 3 channels for each image,
             # we have to specify mean and std for each channel
             A.Normalize(mean=mean, std=std, always_apply=True),
+
+            # convert the data to torch.FloatTensor
+            # with values within the range [0.0 ,1.0]
+            ToTensorV2()
         ]
 
         self.transform = A.Compose(transforms_list)
@@ -83,13 +86,9 @@ class Transformations:
         """
         if not isinstance(image, np.ndarray):
             image = np.array(image)
-            
+            if len(image.shape) == 2:
+                image = np.expand_dims(image, axis=-1)
         image = self.transform(image=image)['image']
-
-        if len(image.shape) == 2:
-            image = torch.unsqueeze(torch.Tensor(image), 0)
-        elif len(image.shape) == 3:
-            image = to_tensor(image)
         return image
 
 
