@@ -14,21 +14,30 @@ class MODESTMuseum(BaseDataset):
     def _split_data(self):
         """Split data into training and validation set."""
 
-        self.image_types = ['bg', 'bg_fg', 'bg_fg_mask', 'bg_fg_depth_map']
+        self.input_types = ['bg', 'bg_fg']
+        self.output_types = ['bg_fg_mask', 'bg_fg_depth_map']
         
         # Set training data
         self.train_transform = {
             img_type: self._transform(data_type=img_type)
-            for img_type in self.image_types
+            for img_type in self.input_types
         }
+        for img_type in self.output_types:  # Outputs will not be normalized
+            self.train_transform[img_type] = self._transform(
+                data_type=img_type, normalize=False
+            )
         self.train_data = self._download()
         self.classes = self._get_classes()
 
         # Set validation data
         self.val_transform = {
             img_type: self._transform(train=False, data_type=img_type)
-            for img_type in self.image_types
+            for img_type in self.input_types
         }
+        for img_type in self.output_types:  # Outputs will not be normalized
+            self.val_transform[img_type] = self._transform(
+                train=False, data_type=img_type, normalize=False
+            )
         self.val_data = self._download(train=False)
 
     def _download(self, train=True, apply_transform=True):
@@ -156,7 +165,7 @@ class MODESTMuseumDataset(Dataset):
         with open(os.path.join(self.path, 'file_map.txt')) as f:
             path_prefixes = ['bg', 'bg_fg', 'bg_fg_mask', 'bg_fg_depth_map']
             for line in f.readlines():
-                imgs = [os.path.join('modest_museum_dataset', p, i + '.jpeg') for p, i in zip(path_prefixes, line[:-1].split('\t'))]
+                imgs = [os.path.join(self.path, p, i + '.jpeg') for p, i in zip(path_prefixes, line[:-1].split('\t'))]
                 self.data.append({p: i for p, i in zip(path_prefixes[:2], imgs[:2])})
                 self.targets.append({p: i for p, i in zip(path_prefixes[2:], imgs[2:])})
     

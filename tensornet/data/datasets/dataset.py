@@ -92,7 +92,7 @@ class BaseDataset:
         self.val_transform = self._transform(train=False)
         self.val_data = self._download(train=False)
     
-    def _transform(self, train=True, data_type=None):
+    def _transform(self, train=True, data_type=None, normalize=True):
         """Define data transformations
         
         Args:
@@ -108,7 +108,8 @@ class BaseDataset:
         args = {
             'mean': self.mean,
             'std': self.std,
-            'train': False
+            'train': False,
+            'normalize': normalize,
         }
 
         if not data_type is None:

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
+from albumentations.pytorch import ToTensor
 
 
 class Transformations:
@@ -11,7 +11,7 @@ class Transformations:
         self, padding=(0, 0), crop=(0, 0), horizontal_flip_prob=0.0,
         vertical_flip_prob=0.0, gaussian_blur_prob=0.0, rotate_degree=0.0,
         cutout_prob=0.0, cutout_dim=(8, 8), mean=(0.5, 0.5, 0.5),
-        std=(0.5, 0.5, 0.5), train=True
+        std=(0.5, 0.5, 0.5), normalize=True, train=True
     ):
         """Create data transformation pipeline.
         
@@ -61,16 +61,17 @@ class Transformations:
                     p=cutout_prob, max_holes=1, fill_value=fill_value,
                     max_height=cutout_dim[0], max_width=cutout_dim[1]
                 )]
-        
-        transforms_list += [
+        if normalize:
             # normalize the data with mean and standard deviation to keep values in range [-1, 1]
             # since there are 3 channels for each image,
             # we have to specify mean and std for each channel
-            A.Normalize(mean=mean, std=std, always_apply=True),
-
-            # convert the data to torch.FloatTensor
-            # with values within the range [0.0 ,1.0]
-            ToTensorV2()
+            transforms_list += [
+                A.Normalize(mean=mean, std=std, always_apply=True),
+            ]
+        
+        # convert the data to torch.FloatTensor
+        transforms_list += [
+            ToTensor()
         ]
 
         self.transform = A.Compose(transforms_list)
