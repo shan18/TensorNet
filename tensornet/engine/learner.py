@@ -243,26 +243,36 @@ class Learner:
             self.val_metrics[metric] = []
         self._reset_metrics()
     
-    def train_batch(self, data, target):
+    def fetch_data(self, data):
+        """Fetch data from loader and load it to GPU.
+
+        Args:
+            data (list or tuple): List containing inputs and targets.
+        
+        Returns:
+            inputs and targets loaded to GPU.
+        """
+        return data[0].to(self.device), data[1].to(self.device)
+    
+    def train_batch(self, data):
         """Train the model on a batch of data.
 
         Args:
-            data: Input batch for the model.
-            target: Expected batch of labels for the data.
+            data: Input and target data for the model.
         
         Returns:
-            Batch loss and predictions.
+            Batch loss.
         """
-        data, target = data.to(self.device), target.to(self.device)
+        inputs, targets = self.fetch_data(data)
         self.optimizer.zero_grad()  # Set gradients to zero before starting backpropagation
-        y_pred = self.model(data)  # Predict output
-        loss = l1(self.model, self.criterion(y_pred, target), self.l1_factor)  # Calculate loss
+        y_pred = self.model(inputs)  # Predict output
+        loss = l1(self.model, self.criterion(y_pred, targets), self.l1_factor)  # Calculate loss
 
         # Perform backpropagation
         loss.backward()
         self.optimizer.step()
 
-        self._calculate_metrics(target, y_pred)
+        self._calculate_metrics(targets, y_pred)
 
         # One Cycle Policy for learning rate
         if not self.lr_schedulers['one_cycle_policy'] is None:
@@ -275,9 +285,9 @@ class Learner:
 
         self.model.train()
         pbar = ProgressBar(target=len(self.train_loader), width=8)
-        for batch_idx, (data, target) in enumerate(self.train_loader, 0):
+        for batch_idx, data in enumerate(self.train_loader, 0):
             # Train a batch
-            loss = self.train_batch(data, target)
+            loss = self.train_batch(data)
 
             # Update Progress Bar
             pbar_values = self._get_pbar_values(loss)
@@ -297,8 +307,7 @@ class Learner:
         iterator = InfiniteDataLoader(self.train_loader)
         for iteration in range(self.epochs):
             # Train a batch
-            data, target = iterator.get_batch()
-            loss = self.train_batch(data, target)
+            loss = self.train_batch(iterator.get_batch())
 
             # Update Progress Bar
             pbar_values = self._get_pbar_values(loss)
@@ -308,6 +317,21 @@ class Learner:
             self.update_training_history(loss)
         
         pbar.add(1, values=pbar_values)
+    
+    def validate_batch(self, data):
+        """Validate the model on a batch of data.
+
+        Args:
+            data: Input and target data for the model.
+        
+        Returns:
+            Batch loss.
+        """
+        inputs, targets = self.fetch_data(data)
+        output = self.model(inputs)  # Get trained model output
+        val_loss = self.criterion(output, targets).item()  # Sum up batch loss
+        self._calculate_metrics(targets, output)  # Calculate evaluation metrics
+        return val_loss
     
     def validate(self, verbose=True):
         """Validate an epoch of model training.
@@ -320,12 +344,8 @@ class Learner:
         val_loss = 0
         correct = 0
         with torch.no_grad():
-            for data, target in self.val_loader:
-                img_batch = data  # This is done to keep data in CPU
-                data, target = data.to(self.device), target.to(self.device)  # Get samples
-                output = self.model(data)  # Get trained model output
-                val_loss += self.criterion(output, target).item()  # Sum up batch loss
-                self._calculate_metrics(target, output)  # Calculate evaluation metrics
+            for data in self.val_loader:
+                val_loss += self.validate_batch(data)
 
         val_loss /= len(self.val_loader.dataset)
         self.val_losses.append(val_loss)

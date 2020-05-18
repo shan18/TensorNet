@@ -8,7 +8,7 @@ class Transformations:
     """Wrapper class to pass on albumentaions transforms into PyTorch."""
 
     def __init__(
-        self, padding=(0, 0), crop=(0, 0), horizontal_flip_prob=0.0,
+        self, resize=(0, 0), padding=(0, 0), crop=(0, 0), horizontal_flip_prob=0.0,
         vertical_flip_prob=0.0, gaussian_blur_prob=0.0, rotate_degree=0.0,
         cutout_prob=0.0, cutout_dim=(8, 8), mean=(0.5, 0.5, 0.5),
         std=(0.5, 0.5, 0.5), normalize=True, train=True
@@ -16,6 +16,8 @@ class Transformations:
         """Create data transformation pipeline.
         
         Args:
+            resize (tuple, optional): Resize the input to the given height and
+                width. (default: (0, 0))
             padding (tuple, optional): Pad the image if the image size is less
                 than the specified dimensions (height, width). (default= (0, 0))
             crop (tuple, optional): Randomly crop the image with the specified
@@ -37,6 +39,10 @@ class Transformations:
         """
         transforms_list = []
 
+        if sum(resize) > 0:
+            transforms_list += [A.Resize(
+                height=resize[0], width=resize[1], always_apply=True
+            )]
         if train:
             if sum(padding) > 0:
                 transforms_list += [A.PadIfNeeded(

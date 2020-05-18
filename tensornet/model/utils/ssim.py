@@ -350,9 +350,9 @@ class MSSSIM(torch.nn.Module):
 
 class MSSSIMLoss(MSSSIM):
     def forward(self, img1, img2):
-        return 100*(1 - super(MSSSIM_Loss, self).forward(img1, img2))
+        return 100*(1 - super(MSSSIMLoss, self).forward(img1, img2))
 
 
 class SSIMLoss(SSIM):
     def forward(self, img1, img2):
-        return 100*(1 - super(SSIM_Loss, self).forward(img1, img2))
+        return 100*(1 - super(SSIMLoss, self).forward(img1, img2))
