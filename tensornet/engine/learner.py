@@ -12,7 +12,8 @@ class Learner:
 
     def __init__(
         self, model, optimizer, criterion, train_loader, device='cpu',
-        epochs=1, val_loader=None, l1_factor=0.0, callbacks=None, metrics=None
+        epochs=1, val_loader=None, l1_factor=0.0, callbacks=None, metrics=None,
+        record_train=True
     ):
         """Train and validate the model.
 
@@ -32,6 +33,8 @@ class Learner:
                 (default: None)
             metrics (list of str, optional): List of names of the metrics for model
                 evaluation. (default: None)
+            record_train (bool, optional): If False, metrics will be calculated only
+                during validation. (default: True)
         """
         self.model = model
         self.optimizer = optimizer
@@ -41,6 +44,7 @@ class Learner:
         self.epochs = epochs
         self.val_loader = val_loader
         self.l1_factor = l1_factor
+        self.record_train = record_train
         
         self.lr_schedulers = {
             'step_lr': None,
@@ -73,7 +77,13 @@ class Learner:
             elif isinstance(callback, torch.optim.lr_scheduler.OneCycleLR):
                 self.lr_schedulers['one_cycle_policy'] = callback
             elif isinstance(callback, ModelCheckpoint):
-                self.checkpoint = callback
+                if callback.monitor.startswith('train_'):
+                    if self.record_train:
+                        self.checkpoint = callback
+                    else:
+                        raise ValueError(
+                            'Cannot use checkpoint for a training metric if record_train is set to False'
+                        )
     
     def _accuracy(self, label, prediction):
         """Calculate accuracy.
@@ -113,7 +123,9 @@ class Learner:
 
         self.metrics['iou']['sum'] += iou.mean(1).sum()
         self.metrics['iou']['num_steps'] += label.size(0)
-        self.metrics['iou']['value'] = self.metrics['iou']['sum'] / self.metrics['iou']['num_steps']
+        self.metrics['iou']['value'] = round(
+            self.metrics['iou']['sum'] / self.metrics['iou']['num_steps'], 3
+        )
     
     def _pred_label_diff(self, label, prediction, rel=False):
         """Calculate the difference between label and prediction.
@@ -249,7 +261,7 @@ class Learner:
     
     def _get_pbar_values(self, loss):
         pbar_values = [('loss', round(loss, 2))]
-        if self.metrics:
+        if self.metrics and self.record_train:
             for metric, info in self.metrics.items():
                 pbar_values.append((metric, info['value']))
         return pbar_values
@@ -257,8 +269,9 @@ class Learner:
     def update_training_history(self, loss):
         """Update the training history."""
         self.train_losses.append(loss)
-        for metric in self.metrics:
-            self.train_metrics[metric].append(self.metrics[metric]['value'])
+        if self.record_train:
+            for metric in self.metrics:
+                self.train_metrics[metric].append(self.metrics[metric]['value'])
     
     def reset_history(self):
         """Reset the training history"""
@@ -311,7 +324,8 @@ class Learner:
         loss.backward()
         self.optimizer.step()
 
-        self._calculate_metrics(targets, y_pred)
+        if self.record_train:
+            self._calculate_metrics(targets, y_pred)
 
         # One Cycle Policy for learning rate
         if not self.lr_schedulers['one_cycle_policy'] is None:
@@ -372,7 +386,7 @@ class Learner:
                 inputs, targets = self.fetch_data(data)
                 output = self.model(inputs)  # Get trained model output
                 val_loss += self.criterion(output, targets).item()  # Sum up batch loss
-                self._calculate_metrics(targets, output, train=False)  # Calculate evaluation metrics
+                self._calculate_metrics(targets, output)  # Calculate evaluation metrics
 
         val_loss /= len(self.val_loader.dataset)
         self.val_losses.append(val_loss)
@@ -397,9 +411,14 @@ class Learner:
                 metric = self.val_losses[-1]
             elif self.metrics:
                 if self.checkpoint.monitor.startswith('train_'):
-                    metric = self.train_metrics[self.checkpoint.monitor.split('train_')[-1]][-1]
+                    if self.record_train:
+                        metric = self.train_metrics[
+                            self.checkpoint.monitor.split('train_')[-1]
+                        ][-1]
                 else:
-                    metric = self.val_metrics[self.checkpoint.monitor.split('val_')[-1]][-1]
+                    metric = self.val_metrics[
+                        self.checkpoint.monitor.split('val_')[-1]
+                    ][-1]
             else:
                 print('Invalid metric function, can\'t save checkpoint.')
                 return
