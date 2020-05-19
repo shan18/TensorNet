@@ -93,6 +93,28 @@ class Learner:
             100 * self.metrics['accuracy']['sum'] / self.metrics['accuracy']['num_steps'], 2
         )
     
+    def _iou(self, label, prediction):
+        """Calculate Intersection over Union.
+        
+        Args:
+            label (torch.Tensor): Ground truth.
+            prediction (torch.Tensor): Prediction.
+        
+        Returns:
+            IoU
+        """
+        intersection = (prediction * label).sum(2).sum(1)
+        union = (prediction + label).sum(2).sum(1) - intersection
+
+        # epsilon is added to avoid 0/0
+        epsilon = 1e-6
+        iou = (intersection + epsilon) / (union + epsilon)
+        iou[iou < 0] = 0
+
+        self.metrics['iou']['sum'] += iou.mean(1).sum()
+        self.metrics['iou']['num_steps'] += label.size(0)
+        self.metrics['iou']['value'] = self.metrics['iou']['sum'] / self.metrics['iou']['num_steps']
+    
     def _pred_label_diff(self, label, prediction, rel=False):
         """Calculate the difference between label and prediction.
         
@@ -194,6 +216,8 @@ class Learner:
                 metric_info['func'] = self._mae
             elif metric == 'abs_rel':
                 metric_info['func'] = self._abs_rel
+            elif metric == 'iou':
+                metric_info['func'] = self._iou
             
             if 'func' in metric_info:
                 self.metrics[metric] = metric_info
@@ -207,7 +231,9 @@ class Learner:
             label (torch.Tensor): Ground truth.
             prediction (torch.Tensor): Prediction.
         """
-        # If predictions are ont-hot encoded
+        prediction = self.activate_logits(prediction)
+
+        # If predictions are one-hot encoded
         if label.size() != prediction.size():
             prediction = prediction.argmax(dim=1, keepdim=True) * 1.0
         
@@ -242,6 +268,19 @@ class Learner:
             self.train_metrics[metric] = []
             self.val_metrics[metric] = []
         self._reset_metrics()
+    
+    def activate_logits(self, logits):
+        """Apply activation function to the logits if needed.
+        After this the logits will be sent for calculation of
+        evaluation metrics.
+
+        Args:
+            logits: Model output
+        
+        Returns:
+            activated logits
+        """
+        return logits
     
     def fetch_data(self, data):
         """Fetch data from loader and load it to GPU.
@@ -318,21 +357,6 @@ class Learner:
         
         pbar.add(1, values=pbar_values)
     
-    def validate_batch(self, data):
-        """Validate the model on a batch of data.
-
-        Args:
-            data: Input and target data for the model.
-        
-        Returns:
-            Batch loss.
-        """
-        inputs, targets = self.fetch_data(data)
-        output = self.model(inputs)  # Get trained model output
-        val_loss = self.criterion(output, targets).item()  # Sum up batch loss
-        self._calculate_metrics(targets, output)  # Calculate evaluation metrics
-        return val_loss
-    
     def validate(self, verbose=True):
         """Validate an epoch of model training.
 
@@ -345,7 +369,10 @@ class Learner:
         correct = 0
         with torch.no_grad():
             for data in self.val_loader:
-                val_loss += self.validate_batch(data)
+                inputs, targets = self.fetch_data(data)
+                output = self.model(inputs)  # Get trained model output
+                val_loss += self.criterion(output, targets).item()  # Sum up batch loss
+                self._calculate_metrics(targets, output, train=False)  # Calculate evaluation metrics
 
         val_loss /= len(self.val_loader.dataset)
         self.val_losses.append(val_loss)
