@@ -57,7 +57,7 @@ def ms_ssim_loss(data_range=1.0, size_average=True, channel=3):
 
     Args:
         data_range (float or int, optional): Value range of input
-            images (usually 1.0 or 255). (default: 255)
+            images (usually 1.0 or 255). (default: 1.0)
         size_average (bool, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
         channel (int, optional): input channels (default: 3)

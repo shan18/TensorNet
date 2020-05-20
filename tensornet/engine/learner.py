@@ -113,15 +113,18 @@ class Learner:
         Returns:
             IoU
         """
+        # Remove 1 channel dimension
+        label = label.squeeze(1)
+        prediction = prediction.squeeze(1)
+        
         intersection = (prediction * label).sum(2).sum(1)
         union = (prediction + label).sum(2).sum(1) - intersection
 
         # epsilon is added to avoid 0/0
         epsilon = 1e-6
         iou = (intersection + epsilon) / (union + epsilon)
-        iou[iou < 0] = 0
 
-        self.metrics['iou']['sum'] += iou.mean(1).sum()
+        self.metrics['iou']['sum'] += iou.sum().item()
         self.metrics['iou']['num_steps'] += label.size(0)
         self.metrics['iou']['value'] = round(
             self.metrics['iou']['sum'] / self.metrics['iou']['num_steps'], 3

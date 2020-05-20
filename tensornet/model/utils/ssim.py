@@ -1,3 +1,7 @@
+# The code in this file has been referenced from
+# https://github.com/VainF/pytorch-msssim/blob/master/pytorch_msssim/ssim.py
+
+
 import torch
 import torch.nn.functional as F
 
@@ -42,7 +46,7 @@ def _ssim(
     data_range,
     win,
     size_average=True,
-    K=(0.01,0.03)
+    K=(0.01, 0.03)
 ):
           
     """Calculate ssim index for X and Y
@@ -252,7 +256,7 @@ def ms_ssim(
 class SSIM(torch.nn.Module):
     def __init__(
         self,
-        data_range=255,
+        data_range=1.0,
         size_average=True,
         win_size=11,
         win_sigma=1.5,
@@ -264,7 +268,7 @@ class SSIM(torch.nn.Module):
 
         Args:
             data_range (float or int, optional): Value range of input
-                images (usually 1.0 or 255). (default: 255)
+                images (usually 1.0 or 255). (default: 1.0)
             size_average (bool, optional): If size_average=True, ssim
                 of all images will be averaged as a scalar. (default: True)
             win_size: (int, optional): The size of gauss kernel.
@@ -302,7 +306,7 @@ class MSSSIM(torch.nn.Module):
 
     def __init__(
         self,
-        data_range=255,
+        data_range=1.0,
         size_average=True,
         win_size=11,
         win_sigma=1.5,
@@ -314,7 +318,7 @@ class MSSSIM(torch.nn.Module):
 
         Args:
             data_range (float or int, optional): Value range of input
-                images (usually 1.0 or 255). (default: 255)
+                images (usually 1.0 or 255). (default: 1.0)
             size_average (bool, optional): If size_average=True, ssim
                 of all images will be averaged as a scalar. (default: True)
             win_size: (int, optional): The size of gauss kernel.
@@ -348,11 +352,11 @@ class MSSSIM(torch.nn.Module):
         )
 
 
-class MSSSIMLoss(MSSSIM):
-    def forward(self, img1, img2):
-        return 100*(1 - super(MSSSIMLoss, self).forward(img1, img2))
-
-
 class SSIMLoss(SSIM):
     def forward(self, img1, img2):
-        return 100*(1 - super(SSIMLoss, self).forward(img1, img2))
+        return 1 - super(SSIMLoss, self).forward(img1, img2)
+
+
+class MSSSIMLoss(MSSSIM):
+    def forward(self, img1, img2):
+        return 1 - super(MSSSIMLoss, self).forward(img1, img2)
