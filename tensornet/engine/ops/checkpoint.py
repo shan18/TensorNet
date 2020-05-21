@@ -77,6 +77,12 @@ class ModelCheckpoint:
             **kwargs: Other keyword arguments.
         """
 
+        if current_value is None:
+            if self.save_best_only:
+                raise ValueError('Metric value cannot be of None type.')
+            else:
+                current_value = -np.Inf
+        
         if self.monitor_op(current_value, self.best) or not self.save_best_only:
             # Set save path
             save_path = self.path

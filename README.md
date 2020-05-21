@@ -1,7 +1,7 @@
 # TensorNet
 
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/shan18/TensorNet/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.5-blue.svg)]()
 
 TensorNet is a high-level deep learning library built on top of PyTorch.
 
@@ -33,6 +33,7 @@ TensorNet currently supports the following features
     - Binary Cross Entropy Loss
     - Mean Square Error Loss
     - SSIM and MS-SSIM Loss
+    - Dice Loss
   - Evaluation Metrics
     - Accuracy
     - RMSE
@@ -49,6 +50,7 @@ TensorNet currently supports the following features
     - One Cycle Policy
   - LR Range Test
   - Model Checkpointing
+  - Tensorboard
 - Model training and validation
 - Datasets (data is is returned via data loaders)
   - MNIST
@@ -56,6 +58,7 @@ TensorNet currently supports the following features
   - TinyImageNet
   - MODEST Museum Dataset
 - Data Augmentation
+  - Resize
   - Padding
   - Random Crop
   - Horizontal Flip
