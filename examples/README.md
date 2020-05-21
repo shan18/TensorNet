@@ -1,5 +1,9 @@
 # TensorNet Demo
 
+## Note
+
+These examples are outdated and correspond to **v0.1** only. The examples will be updated soon.
+
 This directory contains examples which demonstrate how to use TensorNet.
 
 NOTE: These examples apply to the MASTER version of TensorNet only.
