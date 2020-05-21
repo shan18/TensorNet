@@ -86,6 +86,8 @@ class Learner:
                         raise ValueError(
                             'Cannot use checkpoint for a training metric if record_train is set to False'
                         )
+                else:
+                    self.checkpoint = callback
             elif isinstance(callback, TensorBoard):
                 self.summary_writer = callback
                 self.summary_writer.write_model(self.model)
