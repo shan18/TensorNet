@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 from tensornet.engine.ops.regularizer import l1
 from tensornet.engine.ops.checkpoint import ModelCheckpoint
+from tensornet.engine.ops.tensorboard import TensorBoard
 from tensornet.data.processing import InfiniteDataLoader
 from tensornet.utils.progress_bar import ProgressBar
 
@@ -52,6 +53,7 @@ class Learner:
             'one_cycle_policy': None,
         }
         self.checkpoint = None
+        self.summary_writer = None
         if not callbacks is None:
             self._setup_callbacks(callbacks)
 
@@ -84,6 +86,9 @@ class Learner:
                         raise ValueError(
                             'Cannot use checkpoint for a training metric if record_train is set to False'
                         )
+            elif isinstance(callback, TensorBoard):
+                self.summary_writer = callback
+                self.summary_writer.write_model(self.model)
     
     def _accuracy(self, label, prediction):
         """Calculate accuracy.
@@ -428,6 +433,31 @@ class Learner:
             
             self.checkpoint(self.model, metric, epoch)
     
+    def write_summary(self, epoch, train):
+        if not self.summary_writer is None:
+            if train:
+                mode = 'train'
+
+                # Write Images
+                self.summary_writer.write_images(
+                    self.model, self.activate_logits, f'prediction_epoch_{epoch}'
+                )
+                loss = self.train_losses[-1]
+            else:
+                mode = 'val'
+                loss = self.val_losses[-1]
+
+            # Write Loss
+            self.summary_writer.write_scalar(
+                f'Loss/{mode}', loss, epoch
+            )
+            
+            if not train or self.record_train:
+                for metric, info in self.metrics.items():
+                    self.summary_writer.write_scalar(
+                        f'{metric.title()}/{mode}', info['value'], epoch
+                    )
+    
     def fit(self):
         """Perform model training."""
 
@@ -437,11 +467,13 @@ class Learner:
 
             # Train an epoch
             self.train_epoch()
+            self.write_summary(epoch, True)
             self._reset_metrics()
             
             # Validate the model
             if not self.val_loader is None:
                 self.validate()
+                self.write_summary(epoch, False)
                 self._reset_metrics()
             
             # Save model checkpoint
