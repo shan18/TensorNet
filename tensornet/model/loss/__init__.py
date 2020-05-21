@@ -1,6 +1,7 @@
 import torch.nn as nn
 
 from .ssim import SSIMLoss, MSSSIMLoss
+from .dice import DiceLoss
 
 
 def cross_entropy_loss():
@@ -68,3 +69,18 @@ def ms_ssim_loss(data_range=1.0, size_average=True, channel=3):
     return MSSSIMLoss(
         data_range=data_range, size_average=size_average, channel=channel
     )
+
+
+def dice_loss(smooth=1):
+    """Create Dice Loss.
+
+    Args:
+        smooth (float, optional): Smoothing value. A larger
+            smooth value (also known as Laplace smooth, or
+            Additive smooth) can be used to avoid overfitting.
+            (default: 1)
+    
+    Returns:
+        Dice loss function
+    """
+    return DiceLoss(smooth=smooth)
