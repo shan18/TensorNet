@@ -12,28 +12,31 @@ from tensornet.utils.progress_bar import ProgressBar
 class Learner:
 
     def __init__(
-        self, model, optimizer, criterion, train_loader, device='cpu',
-        epochs=1, val_loader=None, l1_factor=0.0, callbacks=None, metrics=None,
-        record_train=True
+        self, model, train_loader, optimizer, criterion, device='cpu',
+        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metrics=None,
+        activate_loss_logits=False, record_train=True
     ):
         """Train and validate the model.
 
         Args:
             model (torch.nn.Module): Model Instance.
+            train_loader (torch.utils.data.DataLoader): Training data loader.
             optimizer (torch.optim): Optimizer for the model.
             criterion (torch.nn): Loss Function.
-            train_loader (torch.utils.data.DataLoader): Training data loader.
             device (str or torch.device, optional): Device where the data
                 will be loaded. (default='cpu')
             epochs (int, optional): Numbers of epochs/iterations to train the model for.
                 (default: 1)
+            l1_factor (float, optional): L1 regularization factor. (default: 0)
             val_loader (torch.utils.data.DataLoader, optional): Validation data
                 loader. (default: None)
-            l1_factor (float, optional): L1 regularization factor. (default: 0)
             callbacks (list, optional): List of callbacks to be used during training.
                 (default: None)
             metrics (list of str, optional): List of names of the metrics for model
                 evaluation. (default: None)
+            activate_loss_logits (bool, optional): If True, the logits will first pass
+                through the `activate_logits` function before going to the criterion.
+                (default: False)
             record_train (bool, optional): If False, metrics will be calculated only
                 during validation. (default: True)
         """
@@ -45,6 +48,7 @@ class Learner:
         self.epochs = epochs
         self.val_loader = val_loader
         self.l1_factor = l1_factor
+        self.activate_loss_logits = activate_loss_logits
         self.record_train = record_train
         
         self.lr_schedulers = {
@@ -86,6 +90,8 @@ class Learner:
                         raise ValueError(
                             'Cannot use checkpoint for a training metric if record_train is set to False'
                         )
+                else:
+                    self.checkpoint = callback
             elif isinstance(callback, TensorBoard):
                 self.summary_writer = callback
                 self.summary_writer.write_model(self.model)
@@ -293,7 +299,7 @@ class Learner:
     def activate_logits(self, logits):
         """Apply activation function to the logits if needed.
         After this the logits will be sent for calculation of
-        evaluation metrics.
+        loss or evaluation metrics.
 
         Args:
             logits: Model output
@@ -302,6 +308,24 @@ class Learner:
             activated logits
         """
         return logits
+    
+    def calculate_criterion(self, logits, targets, train=True):
+        """Calculate loss.
+
+        Args:
+            logits (torch.Tensor): Prediction.
+            targets (torch.Tensor): Ground truth.
+            train (bool, optional): If True, loss is sent to the
+                L1 regularization function. (default: True)
+        
+        Returns:
+            loss value
+        """
+        if self.activate_loss_logits:
+            logits = self.activate_logits(logits)
+        if train:
+            return l1(self.model, self.criterion(logits, targets), self.l1_factor)
+        return self.criterion(logits, targets)
     
     def fetch_data(self, data):
         """Fetch data from loader and load it to GPU.
@@ -326,7 +350,7 @@ class Learner:
         inputs, targets = self.fetch_data(data)
         self.optimizer.zero_grad()  # Set gradients to zero before starting backpropagation
         y_pred = self.model(inputs)  # Predict output
-        loss = l1(self.model, self.criterion(y_pred, targets), self.l1_factor)  # Calculate loss
+        loss = self.calculate_criterion(y_pred, targets, train=True)  # Calculate loss
 
         # Perform backpropagation
         loss.backward()
@@ -393,7 +417,7 @@ class Learner:
             for data in self.val_loader:
                 inputs, targets = self.fetch_data(data)
                 output = self.model(inputs)  # Get trained model output
-                val_loss += self.criterion(output, targets).item()  # Sum up batch loss
+                val_loss += self.calculate_criterion(output, targets, train=False).item()  # Sum up batch loss
                 self._calculate_metrics(targets, output)  # Calculate evaluation metrics
 
         val_loss /= len(self.val_loader.dataset)
