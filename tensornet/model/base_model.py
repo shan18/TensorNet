@@ -31,12 +31,13 @@ class BaseModel(nn.Module):
             input_size (tuple): Size of input to the model.
         """
         model_summary(self, input_size)
-
-    def fit(
+    
+    def create_learner(
         self, train_loader, optimizer, criterion, device='cpu',
-        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metrics=None
+        epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metrics=None,
+        activate_loss_logits=False, record_train=True
     ):
-        """Train the model.
+        """Create Learner object.
 
         Args:
             train_loader (torch.utils.data.DataLoader): Training data loader.
@@ -58,8 +59,27 @@ class BaseModel(nn.Module):
         """
         self.learner = Learner(
             self, optimizer, criterion, train_loader, device=device, epochs=epochs,
-            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, metrics=metrics
+            val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, metrics=metrics,
+            activate_loss_logits=activate_loss_logits, record_train=record_train
         )
+    
+    def set_learner(self, learner):
+        """Assign a learner object to the model.
+
+        Args:
+            learner (Learner): Learner object.
+        """
+        self.learner = learner
+
+    def fit(self, *args, **kwargs):
+        """Train the model."""
+
+        # Check learner
+        if self.learner is None:
+            print('Creating a learner object.')
+            self.create_learner(*args, **kwargs)
+        
+        # Train Model
         self.learner.fit()
     
     def save(self, filepath, **kwargs):
