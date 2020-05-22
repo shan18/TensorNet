@@ -1,7 +1,7 @@
 # TensorNet
 
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/shan18/TensorNet/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.6-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.7-blue.svg)]()
 
 TensorNet is a high-level deep learning library built on top of PyTorch.
 
