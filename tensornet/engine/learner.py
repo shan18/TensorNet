@@ -433,7 +433,7 @@ class Learner:
         end_time = time.time()
 
         # Time spent during validation
-        duration = end_time - start_time
+        duration = int(end_time - start_time)
         minutes = duration // 60
         seconds = duration % 60
 
