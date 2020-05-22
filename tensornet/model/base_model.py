@@ -99,3 +99,18 @@ class BaseModel(nn.Module):
             'optimizer_state_dict': self.learner.optimizer.state_dict(),
             **kwargs
         }, filepath)
+    
+    def load(self, filepath):
+        """Load the model.
+
+        Args:
+            filepath (str): File in which the model is be saved.
+        
+        Returns:
+            Parameters saved inside the checkpoint file.
+        """
+        checkpoint = torch.load(filepath)
+        self.load_state_dict(checkpoint['model_state_dict'])
+        return {
+            k: v for k, v in checkpoint.items() if k != 'model_state_dict'
+        }
