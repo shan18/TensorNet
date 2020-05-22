@@ -47,7 +47,7 @@ def plot_metric(data, metric, legend_loc='lower right'):
         )
 
     # Save plot
-    fig.savefig(f'{'_'.join(metric.split()).lower()}_change.png')
+    fig.savefig(f'{"_".join(metric.split()).lower()}_change.png')
 
 
 def plot_predictions(data, classes, plot_title, plot_path):

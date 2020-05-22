@@ -73,7 +73,7 @@ class BaseModel(nn.Module):
         self.learner = learner
         self.learner.set_model(self)
 
-    def fit(self, *args, **kwargs):
+    def fit(self, *args, start_epoch=1, **kwargs):
         """Train the model."""
 
         # Check learner
@@ -82,7 +82,7 @@ class BaseModel(nn.Module):
             self.create_learner(*args, **kwargs)
         
         # Train Model
-        self.learner.fit()
+        self.learner.fit(start_epoch=start_epoch)
     
     def save(self, filepath, **kwargs):
         """Save the model.

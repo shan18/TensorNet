@@ -493,11 +493,11 @@ class Learner:
                         f'{metric.title()}/{mode}', info['value'], epoch
                     )
     
-    def fit(self):
+    def fit(self, start_epoch=1):
         """Perform model training."""
 
         self.reset_history()
-        for epoch in range(1, self.epochs + 1):
+        for epoch in range(start_epoch, start_epoch + self.epochs):
             print(f'Epoch {epoch}:')
 
             # Train an epoch
