@@ -1,4 +1,5 @@
 import math
+import time
 import torch
 import torch.nn.functional as F
 
@@ -12,14 +13,13 @@ from tensornet.utils.progress_bar import ProgressBar
 class Learner:
 
     def __init__(
-        self, model, train_loader, optimizer, criterion, device='cpu',
+        self, train_loader, optimizer, criterion, device='cpu',
         epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metrics=None,
         activate_loss_logits=False, record_train=True
     ):
         """Train and validate the model.
 
         Args:
-            model (torch.nn.Module): Model Instance.
             train_loader (torch.utils.data.DataLoader): Training data loader.
             optimizer (torch.optim): Optimizer for the model.
             criterion (torch.nn): Loss Function.
@@ -40,7 +40,7 @@ class Learner:
             record_train (bool, optional): If False, metrics will be calculated only
                 during validation. (default: True)
         """
-        self.model = model
+        self.model = None
         self.optimizer = optimizer
         self.criterion = criterion
         self.train_loader = train_loader
@@ -94,7 +94,11 @@ class Learner:
                     self.checkpoint = callback
             elif isinstance(callback, TensorBoard):
                 self.summary_writer = callback
-                self.summary_writer.write_model(self.model)
+    
+    def set_model(self, model):
+        self.model = model
+        if not self.summary_writer is None:
+            self.summary_writer.write_model(self.model)
     
     def _accuracy(self, label, prediction):
         """Calculate accuracy.
@@ -410,6 +414,7 @@ class Learner:
             verbose: Print validation loss and accuracy.
         """
 
+        start_time = time.time()
         self.model.eval()
         val_loss = 0
         correct = 0
@@ -425,9 +430,15 @@ class Learner:
 
         for metric, info in self.metrics.items():
             self.val_metrics[metric].append(info['value'])
+        end_time = time.time()
+
+        # Time spent during validation
+        duration = int(end_time - start_time)
+        minutes = duration // 60
+        seconds = duration % 60
 
         if verbose:
-            log = f'Validation set: Average loss: {val_loss:.4f}'
+            log = f'Validation set (took {minutes} minutes, {seconds} seconds): Average loss: {val_loss:.4f}'
             for metric, info in self.metrics.items():
                 log += f', {metric}: {info["value"]}'
             log += '\n'
