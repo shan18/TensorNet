@@ -58,10 +58,11 @@ class BaseModel(nn.Module):
                 evaluation. (default: None)
         """
         self.learner = Learner(
-            self, optimizer, criterion, train_loader, device=device, epochs=epochs,
+            train_loader, optimizer, criterion, device=device, epochs=epochs,
             val_loader=val_loader, l1_factor=l1_factor, callbacks=callbacks, metrics=metrics,
             activate_loss_logits=activate_loss_logits, record_train=record_train
         )
+        self.learner.set_model(self)
     
     def set_learner(self, learner):
         """Assign a learner object to the model.
@@ -70,6 +71,7 @@ class BaseModel(nn.Module):
             learner (Learner): Learner object.
         """
         self.learner = learner
+        self.learner.set_model(self)
 
     def fit(self, *args, **kwargs):
         """Train the model."""

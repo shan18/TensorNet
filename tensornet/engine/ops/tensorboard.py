@@ -2,7 +2,7 @@ import os
 import numpy as np
 from PIL import Image
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.utils import make_grid
+from torchvision.utils import make_grid, save_image
 
 from tensornet.data.utils import to_numpy
 
@@ -79,14 +79,13 @@ class TensorBoard:
             predictions = activation_fn(predictions)
         predictions = predictions.detach().cpu()
         image_grid = make_grid(predictions)
-        image_grid = np.uint8(to_numpy(image_grid)) * 255
 
         # Write summary
-        self.writer.add_image(image_name, image_grid, dataformats='HWC')
+        self.writer.add_image(image_name, image_grid)
 
         # Save predictions
-        image = Image.fromarray(image_grid)
-        image.save(os.path.join(self.img_dir, f'{image_name}.jpeg'))
+        with open(os.path.join(self.img_dir, f'{image_name}.jpeg'), 'wb') as fimg:
+            save_image(image_grid, fimg)
     
     def write_scalar(self, scalar, value, step_value):
         self.writer.add_scalar(scalar, value, step_value)
