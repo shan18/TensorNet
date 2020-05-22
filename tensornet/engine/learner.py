@@ -74,7 +74,11 @@ class Learner:
             self._setup_metrics(metrics)
     
     def _setup_callbacks(self, callbacks):
-        """Extract callbacks passed to the class."""
+        """Extract callbacks passed to the class.
+
+        Args:
+            callbacks (list): List of callbacks.
+        """
         for callback in callbacks:
             if isinstance(callback, torch.optim.lr_scheduler.StepLR):
                 self.lr_schedulers['step_lr'] = callback
@@ -96,6 +100,11 @@ class Learner:
                 self.summary_writer = callback
     
     def set_model(self, model):
+        """Assign model to learner.
+
+        Args:
+            model (torch.nn.Module): Model Instance.
+        """
         self.model = model
         if not self.summary_writer is None:
             self.summary_writer.write_model(self.model)
@@ -235,7 +244,11 @@ class Learner:
         )
     
     def _setup_metrics(self, metrics):
-        """Validate the evaluation metrics passed to the class."""
+        """Validate the evaluation metrics passed to the class.
+
+        Args:
+            metrics (list): List of metrics.
+        """
         for metric in metrics:
             metric_info = {'value': 0, 'sum': 0, 'num_steps': 0}
             if metric == 'accuracy':
@@ -278,6 +291,11 @@ class Learner:
             self.metrics[metric]['num_steps'] = 0
     
     def _get_pbar_values(self, loss):
+        """Create progress bar description.
+
+        Args:
+            loss (float): Loss value.
+        """
         pbar_values = [('loss', round(loss, 2))]
         if self.metrics and self.record_train:
             for metric, info in self.metrics.items():
@@ -285,7 +303,11 @@ class Learner:
         return pbar_values
 
     def update_training_history(self, loss):
-        """Update the training history."""
+        """Update the training history.
+
+        Args:
+            loss (float): Loss value.
+        """
         self.train_losses.append(loss)
         if self.record_train:
             for metric in self.metrics:
@@ -445,6 +467,12 @@ class Learner:
             print(log)
     
     def save_checkpoint(self, epoch=None):
+        """Save model checkpoint.
+
+        Args:
+            epoch (int, optional): Current epoch number.
+                (default: None)
+        """
         if not self.checkpoint is None:
             metric = None
             params = {}
@@ -469,6 +497,14 @@ class Learner:
             self.checkpoint(self.model, metric, epoch)
     
     def write_summary(self, epoch, train):
+        """Write training summary in tensorboard.
+
+        Args:
+            epoch (int): Current epoch number.
+            train (bool): If True, summary will be
+                written for model training else it
+                will be writtern for model validation.
+        """
         if not self.summary_writer is None:
             if train:
                 mode = 'train'
@@ -494,7 +530,12 @@ class Learner:
                     )
     
     def fit(self, start_epoch=1):
-        """Perform model training."""
+        """Perform model training.
+
+        Args:
+            start_epoch (int, optional): Start epoch for training.
+                (default: 1)
+        """
 
         self.reset_history()
         for epoch in range(start_epoch, start_epoch + self.epochs):

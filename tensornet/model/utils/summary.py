@@ -11,11 +11,32 @@ import numpy as np
 
 
 def summary(model, input_size, batch_size=-1, device=torch.device('cuda:0'), dtypes=None):
+    """Display model summary.
+
+    Args:
+        model (torch.nn.Module): Model instance.
+        input_size (tuple, list or dict): Input size for the model.
+        batch_size (int, optional): Batch size. (default: -1)
+        device (torch.device, optional): Device. (default: 'cuda')
+        dtypes (optional): Model input data types. (default: None)
+    """
     result, _ = summary_string(model, input_size, batch_size, device, dtypes)
     print(result)
 
 
 def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0'), dtypes=None):
+    """Prepare model summary.
+
+    Args:
+        model (torch.nn.Module): Model instance.
+        input_size (tuple, list or dict): Input size for the model.
+        batch_size (int, optional): Batch size. (default: -1)
+        device (torch.device, optional): Device. (default: 'cuda')
+        dtypes (optional): Model input data types. (default: None)
+    
+    Returns:
+        Model summary and number of parameters in the model
+    """
     if dtypes == None:
         dtypes = [torch.FloatTensor]*len(input_size)
 

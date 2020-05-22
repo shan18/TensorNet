@@ -74,7 +74,12 @@ class BaseModel(nn.Module):
         self.learner.set_model(self)
 
     def fit(self, *args, start_epoch=1, **kwargs):
-        """Train the model."""
+        """Train the model.
+
+        Args:
+            start_epoch (int, optional): Start epoch for training.
+                (default: 1)
+        """
 
         # Check learner
         if self.learner is None:

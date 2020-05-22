@@ -34,12 +34,7 @@ class TensorBoard:
             self._move_images()
     
     def _move_images(self):
-        """Move images to a device.
-
-        Args:
-            device (str or torch.device): Device where the data
-                will be loaded.
-        """
+        """Move images to a device."""
         if isinstance(self.images, dict):
             for key in self.images:
                 self.images[key] = self.images[key].to(self.device)
@@ -88,4 +83,11 @@ class TensorBoard:
             save_image(image_grid, fimg)
     
     def write_scalar(self, scalar, value, step_value):
+        """Write scalar metrics to tensorboard.
+
+        Args:
+            scalar (str): Data identifier.
+            value (float or string/blobname): Value to save.
+            step_value (int): Global step value to record.
+        """
         self.writer.add_scalar(scalar, value, step_value)
