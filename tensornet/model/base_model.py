@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torchsummary
 
 from .utils.summary import summary as model_summary
 from tensornet.engine.learner import Learner
