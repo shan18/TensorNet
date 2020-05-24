@@ -1,7 +1,8 @@
 import torch.nn as nn
 
 from .ssim import SSIMLoss, MSSSIMLoss
-from .dice import DiceLoss
+from .dice import DiceLoss, BCEDiceLoss
+from .rmse import RMSELoss
 
 
 def cross_entropy_loss():
@@ -33,6 +34,15 @@ def mse_loss():
         Mean squared error loss function
     """
     return nn.MSELoss()
+
+
+def rmse_loss(smooth=1e-6):
+    """Create Root Mean Squared Error Loss.
+
+    Returns:
+        Root mean squared error loss function
+    """
+    return RMSELoss(smooth=1e-6)
 
 
 def ssim_loss(data_range=1.0, size_average=True, channel=1):
@@ -84,3 +94,15 @@ def dice_loss(smooth=1):
         Dice loss function
     """
     return DiceLoss(smooth=smooth)
+
+
+def bce_dice_loss(smooth=1e-6):
+    """Create BCEDice Loss.
+
+    Args:
+        smooth (float, optional): Smoothing value.
+    
+    Returns:
+        BCEDice loss function
+    """
+    return BCEDiceLoss(smooth=smooth)
