@@ -298,10 +298,11 @@ class Learner:
             if label.size() != prediction.size():
                 prediction = prediction.argmax(dim=1, keepdim=True) * 1.0
             
-            for metric in self.metrics[idx]:
-                self.metrics[idx][metric]['func'](
-                    label, prediction, idx=idx
-                )
+            if idx < len(self.metrics):
+                for metric in self.metrics[idx]:
+                    self.metrics[idx][metric]['func'](
+                        label, prediction, idx=idx
+                    )
     
     def _reset_metrics(self):
         """Reset metric params."""
@@ -479,8 +480,11 @@ class Learner:
         val_loss /= len(self.val_loader.dataset)
         self.val_losses.append(val_loss)
 
-        for metric, info in self.metrics.items():
-            self.val_metrics[metric].append(info['value'])
+        for idx in range(len(self.metrics)):
+            for metric in self.metrics[idx]:
+                self.val_metrics[idx][metric].append(
+                    self.metrics[idx][metric]['value']
+                )
         end_time = time.time()
 
         # Time spent during validation
@@ -490,8 +494,9 @@ class Learner:
 
         if verbose:
             log = f'Validation set (took {minutes} minutes, {seconds} seconds): Average loss: {val_loss:.4f}'
-            for metric, info in self.metrics.items():
-                log += f', {metric}: {info["value"]}'
+            for idx in range(len(self.metrics)):
+                for metric in self.metrics[idx]:
+                    log += f', {metric}: {self.metrics[idx][metric]["value"]}'
             log += '\n'
             print(log)
     
