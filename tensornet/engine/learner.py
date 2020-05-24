@@ -109,7 +109,7 @@ class Learner:
         if not self.summary_writer is None:
             self.summary_writer.write_model(self.model)
     
-    def _accuracy(self, label, prediction):
+    def _accuracy(self, label, prediction, input_name='input'):
         """Calculate accuracy.
         
         Args:
@@ -119,15 +119,15 @@ class Learner:
         Returns:
             accuracy
         """
-        self.metrics['accuracy']['sum'] += prediction.eq(
+        self.metrics[input_name]['accuracy']['sum'] += prediction.eq(
             label.view_as(prediction)
         ).sum().item()
-        self.metrics['accuracy']['num_steps'] += len(label)
-        self.metrics['accuracy']['value'] = round(
-            100 * self.metrics['accuracy']['sum'] / self.metrics['accuracy']['num_steps'], 2
+        self.metrics[input_name]['accuracy']['num_steps'] += len(label)
+        self.metrics[input_name]['accuracy']['value'] = round(
+            100 * self.metrics[input_name]['accuracy']['sum'] / self.metrics[input_name]['accuracy']['num_steps'], 2
         )
     
-    def _iou(self, label, prediction):
+    def _iou(self, label, prediction, input_name='input'):
         """Calculate Intersection over Union.
         
         Args:
@@ -148,10 +148,10 @@ class Learner:
         epsilon = 1e-6
         iou = (intersection + epsilon) / (union + epsilon)
 
-        self.metrics['iou']['sum'] += iou.sum().item()
-        self.metrics['iou']['num_steps'] += label.size(0)
-        self.metrics['iou']['value'] = round(
-            self.metrics['iou']['sum'] / self.metrics['iou']['num_steps'], 3
+        self.metrics[input_name]['iou']['sum'] += iou.sum().item()
+        self.metrics[input_name]['iou']['num_steps'] += label.size(0)
+        self.metrics[input_name]['iou']['value'] = round(
+            self.metrics[input_name]['iou']['sum'] / self.metrics[input_name]['iou']['num_steps'], 3
         )
     
     def _pred_label_diff(self, label, prediction, rel=False):
@@ -180,7 +180,7 @@ class Learner:
             return diff, valid_element_count
 
     
-    def _rmse(self, label, prediction):
+    def _rmse(self, label, prediction, input_name='input'):
         """Calculate Root Mean Square Error.
         
         Args:
@@ -195,13 +195,13 @@ class Learner:
         if not diff is None:
             rmse = math.sqrt(torch.sum(torch.pow(diff[0], 2)) / diff[1])
         
-        self.metrics['rmse']['num_steps'] += label.size(0)
-        self.metrics['rmse']['sum'] += rmse * label.size(0)
-        self.metrics['rmse']['value'] = round(
-            self.metrics['rmse']['sum'] / self.metrics['rmse']['num_steps'], 3
+        self.metrics[input_name]['rmse']['num_steps'] += label.size(0)
+        self.metrics[input_name]['rmse']['sum'] += rmse * label.size(0)
+        self.metrics[input_name]['rmse']['value'] = round(
+            self.metrics[input_name]['rmse']['sum'] / self.metrics[input_name]['rmse']['num_steps'], 3
         )
     
-    def _mae(self, label, prediction):
+    def _mae(self, label, prediction, input_name='input'):
         """Calculate Mean Average Error.
         
         Args:
@@ -216,13 +216,13 @@ class Learner:
         if not diff is None:
             mae = torch.sum(diff[0]).item() / diff[1]
         
-        self.metrics['mae']['num_steps'] += label.size(0)
-        self.metrics['mae']['sum'] += mae * label.size(0)
-        self.metrics['mae']['value'] = round(
-            self.metrics['mae']['sum'] / self.metrics['mae']['num_steps'], 3
+        self.metrics[input_name]['mae']['num_steps'] += label.size(0)
+        self.metrics[input_name]['mae']['sum'] += mae * label.size(0)
+        self.metrics[input_name]['mae']['value'] = round(
+            self.metrics[input_name]['mae']['sum'] / self.metrics[input_name]['mae']['num_steps'], 3
         )
     
-    def _abs_rel(self, label, prediction):
+    def _abs_rel(self, label, prediction, input_name='input'):
         """Calculate Absolute Relative Error.
         
         Args:
@@ -237,58 +237,80 @@ class Learner:
         if not diff is None:
             abs_rel = torch.sum(diff[0]).item() / diff[1]
         
-        self.metrics['abs_rel']['num_steps'] += label.size(0)
-        self.metrics['abs_rel']['sum'] += abs_rel * label.size(0)
-        self.metrics['abs_rel']['value'] = round(
-            self.metrics['abs_rel']['sum'] / self.metrics['abs_rel']['num_steps'], 3
+        self.metrics[input_name]['abs_rel']['num_steps'] += label.size(0)
+        self.metrics[input_name]['abs_rel']['sum'] += abs_rel * label.size(0)
+        self.metrics[input_name]['abs_rel']['value'] = round(
+            self.metrics[input_name]['abs_rel']['sum'] / self.metrics[input_name]['abs_rel']['num_steps'], 3
         )
     
     def _setup_metrics(self, metrics):
         """Validate the evaluation metrics passed to the class.
 
         Args:
-            metrics (list): List of metrics.
+            metrics (list or dict): Metrics.
         """
-        for metric in metrics:
-            metric_info = {'value': 0, 'sum': 0, 'num_steps': 0}
-            if metric == 'accuracy':
-                metric_info['func'] = self._accuracy
-            elif metric == 'rmse':
-                metric_info['func'] = self._rmse
-            elif metric == 'mae':
-                metric_info['func'] = self._mae
-            elif metric == 'abs_rel':
-                metric_info['func'] = self._abs_rel
-            elif metric == 'iou':
-                metric_info['func'] = self._iou
-            
-            if 'func' in metric_info:
-                self.metrics[metric] = metric_info
-                self.train_metrics[metric] = []
-                self.val_metrics[metric] = []
+
+        if isinstance(metrics, dict):
+            metrics = list(metrics.items())
+        else:
+            metrics = [('input', metrics)]
+        
+        for input_name, metric_list in metrics:
+            for metric in metric_list:
+                metric_info = {'value': 0, 'sum': 0, 'num_steps': 0}
+                if metric == 'accuracy':
+                    metric_info['func'] = self._accuracy
+                elif metric == 'rmse':
+                    metric_info['func'] = self._rmse
+                elif metric == 'mae':
+                    metric_info['func'] = self._mae
+                elif metric == 'abs_rel':
+                    metric_info['func'] = self._abs_rel
+                elif metric == 'iou':
+                    metric_info['func'] = self._iou
+                
+                if 'func' in metric_info:
+                    if not input_name in self.metrics:
+                        self.metrics[input_name] = {}
+                        self.train_metrics[input_name] = {}
+                        self.val_metrics[input_name] = {}
+                    self.metrics[input_name][metric] = metric_info
+                    self.train_metrics[input_name][metric] = []
+                    self.val_metrics[input_name][metric] = []
     
     def _calculate_metrics(self, label, prediction):
         """Update evaluation metric values.
         
         Args:
-            label (torch.Tensor): Ground truth.
-            prediction (torch.Tensor): Prediction.
+            label (torch.Tensor or dict): Ground truth.
+            prediction (torch.Tensor or dict): Prediction.
         """
         prediction = self.activate_logits(prediction)
 
         # If predictions are one-hot encoded
-        if label.size() != prediction.size():
-            prediction = prediction.argmax(dim=1, keepdim=True) * 1.0
-        
-        for _, info in self.metrics.items():
-            info['func'](label, prediction)
+        if isinstance(label, dict):
+            for input_name in label:
+                if label[input_name].size() != prediction[input_name].size():
+                    prediction[input_name] = prediction[input_name].argmax(
+                        dim=1, keepdim=True
+                    ) * 1.0
+                for _, info in self.metrics[input_name].items():
+                    info['func'](
+                        label[input_name], prediction[input_name], input_name=input_name
+                    )
+        else:
+            if label.size() != prediction.size():
+                prediction = prediction.argmax(dim=1, keepdim=True) * 1.0
+            for _, info in self.metrics.items():
+                info['func'](label, prediction)
     
     def _reset_metrics(self):
         """Reset metric params."""
-        for metric in self.metrics:
-            self.metrics[metric]['value'] = 0
-            self.metrics[metric]['sum'] = 0
-            self.metrics[metric]['num_steps'] = 0
+        for input_name in self.metrics:
+            for metric in self.metrics[input_name]:
+                self.metrics[input_name][metric]['value'] = 0
+                self.metrics[input_name][metric]['sum'] = 0
+                self.metrics[input_name][metric]['num_steps'] = 0
     
     def _get_pbar_values(self, loss):
         """Create progress bar description.
@@ -298,8 +320,12 @@ class Learner:
         """
         pbar_values = [('loss', round(loss, 2))]
         if self.metrics and self.record_train:
-            for metric, info in self.metrics.items():
-                pbar_values.append((metric, info['value']))
+            for input_name in self.metrics:
+                for metric, info in self.metrics[input_name].items():
+                    metric_name = metric
+                    if len(self.metrics) > 1:
+                        metric_name = f'{input_name} - {metric}'
+                    pbar_values.append((metric_name, info['value']))
         return pbar_values
 
     def update_training_history(self, loss):
@@ -310,16 +336,20 @@ class Learner:
         """
         self.train_losses.append(loss)
         if self.record_train:
-            for metric in self.metrics:
-                self.train_metrics[metric].append(self.metrics[metric]['value'])
+            for input_name in self.metrics:
+                for metric in self.metrics[input_name]:
+                    self.train_metrics[input_name][metric].append(
+                        self.metrics[input_name][metric]['value']
+                    )
     
     def reset_history(self):
         """Reset the training history"""
         self.train_losses = []
         self.val_losses = []
-        for metric in self.metrics:
-            self.train_metrics[metric] = []
-            self.val_metrics[metric] = []
+        for input_name in self.metrics:
+            for metric in self.metrics[input_name]:
+                self.train_metrics[input_name][metric] = []
+                self.val_metrics[input_name][metric] = []
         self._reset_metrics()
     
     def activate_logits(self, logits):
@@ -524,10 +554,11 @@ class Learner:
             )
             
             if not train or self.record_train:
-                for metric, info in self.metrics.items():
-                    self.summary_writer.write_scalar(
-                        f'{metric.title()}/{mode}', info['value'], epoch
-                    )
+                for input_name in self.metrics:
+                    for metric, info in self.metrics[input_name].items():
+                        self.summary_writer.write_scalar(
+                            f'{metric.title()}/{mode}', info['value'], epoch
+                        )
     
     def fit(self, start_epoch=1):
         """Perform model training.

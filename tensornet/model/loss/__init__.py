@@ -35,7 +35,7 @@ def mse_loss():
     return nn.MSELoss()
 
 
-def ssim_loss(data_range=1.0, size_average=True, channel=3):
+def ssim_loss(data_range=1.0, size_average=True, channel=1):
     """Create SSIM Loss.
 
     Args:
@@ -43,7 +43,7 @@ def ssim_loss(data_range=1.0, size_average=True, channel=3):
             images (usually 1.0 or 255). (default: 255)
         size_average (bool, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
-        channel (int, optional): input channels (default: 3)
+        channel (int, optional): input channels (default: 1)
 
     Returns:
         SSIM loss function
@@ -53,7 +53,7 @@ def ssim_loss(data_range=1.0, size_average=True, channel=3):
     )
 
 
-def ms_ssim_loss(data_range=1.0, size_average=True, channel=3):
+def ms_ssim_loss(data_range=1.0, size_average=True, channel=1):
     """Create MS-SSIM Loss.
 
     Args:
@@ -61,7 +61,7 @@ def ms_ssim_loss(data_range=1.0, size_average=True, channel=3):
             images (usually 1.0 or 255). (default: 1.0)
         size_average (bool, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
-        channel (int, optional): input channels (default: 3)
+        channel (int, optional): input channels (default: 1)
 
     Returns:
         MS-SSIM loss function
