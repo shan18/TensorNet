@@ -6,7 +6,7 @@ import torch
 class ModelCheckpoint:
     """Store model checkpoint while training."""
 
-    def __init__(self, path, monitor='val_loss', mode='auto', verbose=0, save_best_only=True):
+    def __init__(self, path, monitor='val_loss', mode='auto', verbose=0, save_best_only=True, best_value=None):
         """Initialize model checkpoint instance.
 
         Args:
@@ -17,6 +17,9 @@ class ModelCheckpoint:
             verbose (int, optional): verbosity mode, 0 or 1. (default: 0)
             save_best_only (bool, optional): If True, only the model with the best
                 value of monitoring quantity will be saved. (default: True)
+            best_value (float, optional): Best value of the monitored metric, this is
+                useful when resuming training. This param will work only when
+                `save_best_only` is True. (default: None)
         """
         self.verbose = verbose
         self.save_best_only = save_best_only
@@ -34,6 +37,8 @@ class ModelCheckpoint:
         # Set monitor quantity and mode
         self.monitor = monitor
         self._set_monitor_mode(mode)
+        if not best_value is None:
+            self.best = best_value
     
     def _set_monitor_mode(self, mode):
         """Set the mode and monitor operation.

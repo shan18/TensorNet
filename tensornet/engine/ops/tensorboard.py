@@ -34,12 +34,7 @@ class TensorBoard:
             self._move_images()
     
     def _move_images(self):
-        """Move images to a device.
-
-        Args:
-            device (str or torch.device): Device where the data
-                will be loaded.
-        """
+        """Move images to a device."""
         if isinstance(self.images, dict):
             for key in self.images:
                 self.images[key] = self.images[key].to(self.device)
@@ -60,6 +55,18 @@ class TensorBoard:
         if not self.images is None:
             self.writer.add_graph(model, self.images)
     
+    def write_image(self, image, image_name):
+        image = image.detach().cpu()
+        image_grid = make_grid(image)
+
+        self.writer.add_image(image_name, image_grid)  # Write summary
+
+        with open(
+            os.path.join(self.img_dir, f'{image_name}.jpeg'),
+            'wb'
+        ) as fimg: # Save predictions
+            save_image(image_grid, fimg)
+    
     def write_images(self, model, activation_fn=None, image_name=None):
         """Write images to tensorboard.
 
@@ -77,15 +84,19 @@ class TensorBoard:
         predictions = model(self.images)
         if not activation_fn is None:
             predictions = activation_fn(predictions)
-        predictions = predictions.detach().cpu()
-        image_grid = make_grid(predictions)
-
-        # Write summary
-        self.writer.add_image(image_name, image_grid)
-
-        # Save predictions
-        with open(os.path.join(self.img_dir, f'{image_name}.jpeg'), 'wb') as fimg:
-            save_image(image_grid, fimg)
+        
+        if isinstance(predictions, (tuple, list)):
+            for idx, prediction in enumerate(predictions):
+                self.write_image(prediction, f'{idx}_{image_name}')
+        else:
+            self.write_image(predictions, image_name)
     
     def write_scalar(self, scalar, value, step_value):
+        """Write scalar metrics to tensorboard.
+
+        Args:
+            scalar (str): Data identifier.
+            value (float or string/blobname): Value to save.
+            step_value (int): Global step value to record.
+        """
         self.writer.add_scalar(scalar, value, step_value)

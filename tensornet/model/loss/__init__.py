@@ -1,7 +1,8 @@
 import torch.nn as nn
 
 from .ssim import SSIMLoss, MSSSIMLoss
-from .dice import DiceLoss
+from .dice import DiceLoss, BCEDiceLoss
+from .rmse import RMSELoss
 
 
 def cross_entropy_loss():
@@ -35,7 +36,16 @@ def mse_loss():
     return nn.MSELoss()
 
 
-def ssim_loss(data_range=1.0, size_average=True, channel=3):
+def rmse_loss(smooth=1e-6):
+    """Create Root Mean Squared Error Loss.
+
+    Returns:
+        Root mean squared error loss function
+    """
+    return RMSELoss(smooth=1e-6)
+
+
+def ssim_loss(data_range=1.0, size_average=True, channel=1):
     """Create SSIM Loss.
 
     Args:
@@ -43,7 +53,7 @@ def ssim_loss(data_range=1.0, size_average=True, channel=3):
             images (usually 1.0 or 255). (default: 255)
         size_average (bool, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
-        channel (int, optional): input channels (default: 3)
+        channel (int, optional): input channels (default: 1)
 
     Returns:
         SSIM loss function
@@ -53,7 +63,7 @@ def ssim_loss(data_range=1.0, size_average=True, channel=3):
     )
 
 
-def ms_ssim_loss(data_range=1.0, size_average=True, channel=3):
+def ms_ssim_loss(data_range=1.0, size_average=True, channel=1):
     """Create MS-SSIM Loss.
 
     Args:
@@ -61,7 +71,7 @@ def ms_ssim_loss(data_range=1.0, size_average=True, channel=3):
             images (usually 1.0 or 255). (default: 1.0)
         size_average (bool, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
-        channel (int, optional): input channels (default: 3)
+        channel (int, optional): input channels (default: 1)
 
     Returns:
         MS-SSIM loss function
@@ -84,3 +94,15 @@ def dice_loss(smooth=1):
         Dice loss function
     """
     return DiceLoss(smooth=smooth)
+
+
+def bce_dice_loss(smooth=1e-6):
+    """Create BCEDice Loss.
+
+    Args:
+        smooth (float, optional): Smoothing value.
+    
+    Returns:
+        BCEDice loss function
+    """
+    return BCEDiceLoss(smooth=smooth)

@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 
 
-def plot_metric(data, metric):
+def plot_metric(data, metric, legend_loc='lower right'):
     """Plot accuracy graph or loss graph.
 
     Args:
@@ -11,6 +11,9 @@ def plot_metric(data, metric):
             the plot name and values being a list of points to plot
         metric (str): Metric name which is to be plotted. Can be either
             loss or accuracy.
+        legend_loc (str, optional): Location of the legend box in the plot.
+            No legend will be plotted if there is only a single plot.
+            (default: 'lower right')
     """
 
     single_plot = True
@@ -36,16 +39,15 @@ def plot_metric(data, metric):
     plt.ylabel(metric)
 
     if not single_plot: # Set legend
-        location = 'upper' if metric == 'Loss' else 'lower'
         plt.legend(
             tuple(plots), tuple(data.keys()),
-            loc=f'{location} right',
+            loc=legend_loc,
             shadow=True,
             prop={'size': 15}
         )
 
     # Save plot
-    fig.savefig(f'{metric.lower()}_change.png')
+    fig.savefig(f'{"_".join(metric.split()).lower()}_change.png')
 
 
 def plot_predictions(data, classes, plot_title, plot_path):

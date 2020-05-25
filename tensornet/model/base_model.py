@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torchsummary
 
 from .utils.summary import summary as model_summary
 from tensornet.engine.learner import Learner
@@ -73,8 +72,13 @@ class BaseModel(nn.Module):
         self.learner = learner
         self.learner.set_model(self)
 
-    def fit(self, *args, **kwargs):
-        """Train the model."""
+    def fit(self, *args, start_epoch=1, **kwargs):
+        """Train the model.
+
+        Args:
+            start_epoch (int, optional): Start epoch for training.
+                (default: 1)
+        """
 
         # Check learner
         if self.learner is None:
@@ -82,7 +86,7 @@ class BaseModel(nn.Module):
             self.create_learner(*args, **kwargs)
         
         # Train Model
-        self.learner.fit()
+        self.learner.fit(start_epoch=start_epoch)
     
     def save(self, filepath, **kwargs):
         """Save the model.
@@ -99,3 +103,18 @@ class BaseModel(nn.Module):
             'optimizer_state_dict': self.learner.optimizer.state_dict(),
             **kwargs
         }, filepath)
+    
+    def load(self, filepath):
+        """Load the model.
+
+        Args:
+            filepath (str): File in which the model is be saved.
+        
+        Returns:
+            Parameters saved inside the checkpoint file.
+        """
+        checkpoint = torch.load(filepath)
+        self.load_state_dict(checkpoint['model_state_dict'])
+        return {
+            k: v for k, v in checkpoint.items() if k != 'model_state_dict'
+        }
