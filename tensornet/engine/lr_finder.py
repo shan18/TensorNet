@@ -51,7 +51,8 @@ class LRFinder:
 
         # Check if correct 'metric' has been given
         if not metric in ['loss', 'accuracy']:
-            raise ValueError(f'For "metric" expected one of (loss, accuracy), got {metric}')
+            raise ValueError(
+                f'For "metric" expected one of (loss, accuracy), got {metric}')
 
         # Check if the optimizer is already attached to a scheduler
         self.optimizer = optimizer
@@ -90,8 +91,9 @@ class LRFinder:
         """Check if the optimizer has and existing scheduler attached to it."""
         for param_group in self.optimizer.param_groups:
             if 'initial_lr' in param_group:
-                raise RuntimeError('Optimizer already has a scheduler attached to it')
-    
+                raise RuntimeError(
+                    'Optimizer already has a scheduler attached to it')
+
     def _set_learning_rate(self, new_lrs):
         """Set the given learning rates in the optimizer."""
         if not isinstance(new_lrs, list):
@@ -110,6 +112,7 @@ class LRFinder:
         train_loader,
         iterations,
         mode='iteration',
+        learner=None,
         val_loader=None,
         start_lr=None,
         end_lr=10,
@@ -127,6 +130,7 @@ class LRFinder:
                 to the number of epochs.
             mode (str, optional): After which mode to update the learning rate. Can be
                 either 'iteration' or 'epoch'. (default: 'iteration') 
+            learner (Learner, optional): Learner object for the model. (default: None) 
             val_loader (torch.utils.data.DataLoader, optional): If None, the range test
                 will only use the training metric. When given a data loader, the model is
                 evaluated after each iteration on that dataset and the evaluation metric
@@ -146,7 +150,8 @@ class LRFinder:
 
         # Check if correct 'mode' mode has been given
         if not mode in ['iteration', 'epoch']:
-            raise ValueError(f'For "mode" expected one of (iteration, epoch), got {mode}')
+            raise ValueError(
+                f'For "mode" expected one of (iteration, epoch), got {mode}')
 
         # Reset test results
         self.history = {'lr': [], 'metric': []}
@@ -171,11 +176,23 @@ class LRFinder:
         if smooth_f < 0 or smooth_f >= 1:
             raise ValueError('smooth_f is outside the range [0, 1]')
 
+        # Set accuracy metric if needed
+        metrics = None
+        if self.metric == 'accuracy':
+            metrics = ['accuracy']
+
         # Get the learner object
-        self.learner = Learner(
-            self.model, self.optimizer, self.criterion, train_loader,
-            device=self.device, val_loader=val_loader
-        )
+        if not learner is None:
+            self.learner = learner(
+                train_loader, self.optimizer, self.criterion,
+                device=self.device, val_loader=val_loader, metrics=metrics
+            )
+        else:
+            self.learner = Learner(
+                train_loader, self.optimizer, self.criterion,
+                device=self.device, val_loader=val_loader, metrics=metrics
+            )
+        self.learner.set_model(self.model)
 
         train_iterator = InfiniteDataLoader(train_loader)
         pbar = ProgressBar(target=iterations, width=8)
@@ -188,7 +205,7 @@ class LRFinder:
             self._train_model(mode, train_iterator)
             if val_loader:
                 self.learner.validate(verbose=False)
-            
+
             # Get metric value
             metric_value = self._get_metric(val_loader)
 
@@ -202,7 +219,8 @@ class LRFinder:
                 self.best_lr = self.history['lr'][-1]
             else:
                 if smooth_f > 0:
-                    metric_value = smooth_f * metric_value + (1 - smooth_f) * self.history['metric'][-1]
+                    metric_value = smooth_f * metric_value + \
+                        (1 - smooth_f) * self.history['metric'][-1]
                 if (
                     (self.metric == 'loss' and metric_value < self.best_metric) or
                     (self.metric == 'accuracy' and metric_value > self.best_metric)
@@ -216,7 +234,7 @@ class LRFinder:
             if (
                 diverge_th > 0 and
                 ((self.metric == 'loss' and metric_value > self.best_metric * diverge_th) or
-                (self.metric == 'accuracy' and metric_value < self.best_metric / diverge_th))
+                 (self.metric == 'accuracy' and metric_value < self.best_metric / diverge_th))
             ):
                 if mode == 'iteration':
                     pbar.update(iterations - 1, values=[
@@ -228,33 +246,34 @@ class LRFinder:
             else:
                 if mode == 'epoch':
                     lr = self.history['lr'][-1]
-                    print(f'Learning Rate: {lr:.4f}, {self.metric.title()}: {metric_value:.2f}\n')
+                    print(
+                        f'Learning Rate: {lr:.4f}, {self.metric.title()}: {metric_value:.2f}\n')
                 elif mode == 'iteration':
                     pbar.update(iteration, values=[
                         ('lr', self.history['lr'][-1]),
                         (self.metric.title(), metric_value)
                     ])
-        
+
         metric = self._display_metric_value(self.best_metric)
         if mode == 'epoch':
-            print(f'Learning Rate: {self.best_lr:.4f}, {self.metric.title()}: {metric:.2f}\n')
+            print(
+                f'Learning Rate: {self.best_lr:.4f}, {self.metric.title()}: {metric:.2f}\n')
         elif mode == 'iteration':
             pbar.add(1, values=[
                 ('lr', self.best_lr),
                 (self.metric.title(), metric)
             ])
         print('Learning rate search finished.')
-    
+
     def _train_model(self, mode, train_iterator):
         if mode == 'iteration':
             self.learner.model.train()
             data, targets = train_iterator.get_batch()
-            loss = self.learner.train_batch(data, targets)
-            accuracy = 100 * self.learner.train_correct / self.learner.train_processed
-            self.learner.update_training_history(loss, accuracy)
+            loss = self.learner.train_batch((data, targets))
+            self.learner.update_training_history(loss)
         elif mode == 'epoch':
             self.learner.train_epoch()
-    
+
     def _get_metric(self, validation=None):
         if self.metric == 'loss':
             if validation:
@@ -262,9 +281,9 @@ class LRFinder:
             return self.learner.train_losses[-1]
         elif self.metric == 'accuracy':
             if validation:
-                return self.learner.val_accuracies[-1] / 100
-            return self.learner.train_accuracies[-1] / 100
-    
+                return self.learner.val_metrics[0][-1] / 100
+            return self.learner.train_metrics[0][-1] / 100
+
     def _display_metric_value(self, value):
         if self.metric == 'accuracy':
             return value * 100
@@ -382,7 +401,8 @@ class StateCacher(object):
                 raise RuntimeError(
                     f"Failed to load state in {fn}. File doesn't exist anymore."
                 )
-            state_dict = torch.load(fn, map_location=lambda storage, location: storage)
+            state_dict = torch.load(
+                fn, map_location=lambda storage, location: storage)
             return state_dict
 
     def __del__(self):
