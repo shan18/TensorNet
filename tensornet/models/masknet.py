@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from tensornet.model.base_model import BaseModel
+from .base_model import BaseModel
 
 
 class MaskNet(BaseModel):
