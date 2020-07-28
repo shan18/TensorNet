@@ -1,3 +1,5 @@
+# The code in this file is referenced from https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py
+
 import torch
 import torch.nn as nn
 
