@@ -1,7 +1,7 @@
 # TensorNet
 
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/shan18/TensorNet/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.9-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.9.1-blue.svg)]()
 
 TensorNet is a high-level deep learning library built on top of PyTorch.
 
@@ -96,7 +96,7 @@ Documentation making for the library is currently in progress. So until a docume
 | Learner, Callbacks and Tensorboard | engine |
 | Dataset downloading and preprocessing | data |
 | GradCAM and GradCAM++ | gradcam |
-| Models, loss functions and optimizers | model |
+| Models, loss functions and optimizers | models |
 | CUDA setup and result analysis | utils |
 
 For a demo on how to use these modules, refer to the notebooks present in the [examples](https://github.com/shan18/TensorNet/tree/master/examples) directory.

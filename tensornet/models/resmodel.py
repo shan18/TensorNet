@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from tensornet.model.base_model import BaseModel
-from tensornet.model.resnet import BasicBlock
+from .base_model import BaseModel
+from .resnet import BasicBlock
 
 
 class ResidualBlock(nn.Module):
