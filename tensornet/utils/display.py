@@ -1,25 +1,29 @@
 import os
 import matplotlib.pyplot as plt
+from typing import Union, List, Dict, Tuple, Optional
 
 
-def plot_metric(data, metric, legend_loc='lower right'):
+def plot_metric(
+    data: Union[List[float], Dict[str, List[float]]],
+    metric: str, legend_loc: str = 'lower right'
+):
     """Plot accuracy graph or loss graph.
 
     Args:
-        data (list or dict): If only single plot then this is a list, else
-            for multiple plots this is a dict with keys containing.
-            the plot name and values being a list of points to plot
+        data (:obj:`list` or :obj:`dict`): If only single plot then this is a list, else
+            for multiple plots this is a dict with keys containing the plot name and values
+            being a list of points to plot.
         metric (str): Metric name which is to be plotted. Can be either
             loss or accuracy.
-        legend_loc (str, optional): Location of the legend box in the plot.
+        legend_loc (:obj:`str`, optional): Location of the legend box in the plot.
             No legend will be plotted if there is only a single plot.
-            (default: 'lower right')
+            (default: *'lower right'*)
     """
 
     single_plot = True
     if type(data) == dict:
         single_plot = False
-    
+
     # Initialize a figure
     fig = plt.figure(figsize=(7, 5))
 
@@ -38,7 +42,7 @@ def plot_metric(data, metric, legend_loc='lower right'):
     plt.xlabel('Epoch')
     plt.ylabel(metric)
 
-    if not single_plot: # Set legend
+    if not single_plot:  # Set legend
         plt.legend(
             tuple(plots), tuple(data.keys()),
             loc=legend_loc,
@@ -50,13 +54,16 @@ def plot_metric(data, metric, legend_loc='lower right'):
     fig.savefig(f'{"_".join(metric.split()).lower()}_change.png')
 
 
-def plot_predictions(data, classes, plot_title, plot_path):
+def plot_predictions(
+    data: List[dict], classes: Union[List[str], Tuple[str]],
+    plot_title: str, plot_path: str
+):
     """Display data.
 
     Args:
         data (list): List of images, model predictions and ground truths.
             Images should be numpy arrays.
-        classes (list or tuple): List of classes in the dataset.
+        classes (:obj:`list` or :obj:`tuple`): List of classes in the dataset.
         plot_title (str): Title for the plot.
         plot_path (str): Complete path for saving the plot.
     """
@@ -71,7 +78,7 @@ def plot_predictions(data, classes, plot_title, plot_path):
         # If 25 samples have been stored, break out of loop
         if idx > 24:
             break
-        
+
         label = result['label'].item()
         prediction = result['prediction'].item()
 
@@ -81,7 +88,7 @@ def plot_predictions(data, classes, plot_title, plot_path):
         axs[row_count][idx % 5].axis('off')
         axs[row_count][idx % 5].set_title(f'Label: {classes[label]}\nPrediction: {classes[prediction]}')
         axs[row_count][idx % 5].imshow(result['image'])
-    
+
     # Set spacing
     fig.tight_layout()
     fig.subplots_adjust(top=0.88)
@@ -90,17 +97,17 @@ def plot_predictions(data, classes, plot_title, plot_path):
     fig.savefig(f'{plot_path}', bbox_inches='tight')
 
 
-def save_and_show_result(classes, correct_pred=None, incorrect_pred=None, path=None):
+def save_and_show_result(
+    classes: Union[List[str], Tuple[str]], correct_pred: Optional[List[dict]] = None,
+    incorrect_pred: Optional[List[dict]] = None, path: Optional[str] = None
+):
     """Display network predictions.
 
     Args:
-        classes (list or tuple): List of classes in the dataset.
-        correct_pred (list, optional): Contains correct model predictions and labels.
-            (default: None)
-        incorrect_pred (list, optional): Contains incorrect model predictions and labels.
-            (default: None)
-        path (str, optional): Path where the results will be saved.
-            (default: None)
+        classes (:obj:`list` or :obj:`tuple`): List of classes in the dataset.
+        correct_pred (:obj:`list`, optional): Contains correct model predictions and labels.
+        incorrect_pred (:obj:`list`, optional): Contains incorrect model predictions and labels.
+        path (:obj:`str`, optional): Path where the results will be saved.
     """
 
     # Create directories for saving predictions
@@ -110,7 +117,7 @@ def save_and_show_result(classes, correct_pred=None, incorrect_pred=None, path=N
         )
     if not os.path.exists(path):
         os.makedirs(path)
-    
+
     if not correct_pred is None:  # Plot correct predicitons
         plot_predictions(
             correct_pred, classes, 'Correct Predictions', f'{path}/correct_predictions.png'

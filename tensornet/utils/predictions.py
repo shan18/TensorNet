@@ -1,14 +1,18 @@
 import torch
+from typing import Union, List, Tuple
 
 
-def class_level_accuracy(model, loader, device, classes):
+def class_level_accuracy(
+    model: torch.nn.Module, loader: torch.utils.data.DataLoader,
+    device: Union[str, torch.device], classes: Union[List[str], Tuple[str]]
+):
     """Print test accuracy for each class in dataset.
 
     Args:
         model (torch.nn.Module): Model Instance.
-        loader (torch.utils.data.DataLoader): Data Loader
-        device (str or torch.device): Device where data will be loaded.
-        classes (list or tuple): List of classes in the dataset
+        loader (torch.utils.data.DataLoader): Data Loader.
+        device (:obj:`str` or :obj:`torch.device`): Device where data will be loaded.
+        classes (:obj:`list` or :obj:`tuple`): List of classes in the dataset.
     """
 
     class_correct = list(0. for i in range(len(classes)))
@@ -26,20 +30,23 @@ def class_level_accuracy(model, loader, device, classes):
                 label = labels[i]
                 class_correct[label] += c[i].item()
                 class_total[label] += 1
-    
+
     # Display class level accuracy
     for i in range(10):
         print('Accuracy of %5s : %2d %%' % (classes[i], 100 * class_correct[i] / class_total[i]))
 
 
-def get_predictions(model, loader, device, sample_count=25):
+def get_predictions(
+    model: torch.nn.Module, loader: torch.utils.data.DataLoader,
+    device: Union[str, torch.device], sample_count: int = 25
+):
     """Get correct and incorrect model predictions.
 
     Args:
         model (torch.nn.Module): Model Instance.
         loader (torch.utils.data.DataLoader): Data Loader.
-        device (str or torch.device): Device where data will be loaded.
-        sample_count (int, optional): Total number of predictions to store from
+        device (:obj:`str` or :obj:`torch.device`): Device where data will be loaded.
+        sample_count (obj:`int`, optional): Total number of predictions to store from
             each correct and incorrect samples. (default: 25)
     """
 
@@ -78,8 +85,8 @@ def get_predictions(model, loader, device, sample_count=25):
                         })
                     else:
                         incorrect_complete = True
-            
+
             if correct_complete and incorrect_complete:
                 break
-    
+
     return correct_samples, incorrect_samples
