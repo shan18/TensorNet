@@ -25,14 +25,14 @@ class LRFinder:
         optimizer (torch.optim): Optimizer where the defined learning
             is assumed to be the lower boundary of the range test.
         criterion (torch.nn): Loss function.
-        metric (str, optional): Metric to use for finding the best learning rate. Can
+        metric (:obj:`str`, optional): Metric to use for finding the best learning rate. Can
             be either 'loss' or 'accuracy'. (default: 'loss')
-        device (str or torch.device, optional): Device where the computation
+        device (:obj:`str` or :obj:`torch.device`, optional): Device where the computation
             will take place. If None, uses the same device as `model`. (default: none)
-        memory_cache (bool, optional): If this flag is set to True, state_dict of
+        memory_cache (:obj:`bool`, optional): If this flag is set to True, state_dict of
             model and optimizer will be cached in memory. Otherwise, they will be saved
             to files under the `cache_dir`. (default: True)
-        cache_dir (str, optional): Path for storing temporary files. If no path is
+        cache_dir (:obj:`str`, optional): Path for storing temporary files. If no path is
             specified, system-wide temporary directory is used. Notice that this
             parameter will be ignored if `memory_cache` is True. (default: None)
     """
@@ -128,23 +128,23 @@ class LRFinder:
                 If 'mode' is set to 'iteration' then it will correspond to the
                 number of iterations else if mode is set to 'epoch' then it will correspond
                 to the number of epochs.
-            mode (str, optional): After which mode to update the learning rate. Can be
-                either 'iteration' or 'epoch'. (default: 'iteration') 
-            learner (Learner, optional): Learner object for the model. (default: None) 
-            val_loader (torch.utils.data.DataLoader, optional): If None, the range test
+            mode (:obj:`str`, optional): After which mode to update the learning rate. Can be
+                either 'iteration' or 'epoch'. (default: 'iteration')
+            learner (:obj:`Learner`, optional): Learner object for the model. (default: None)
+            val_loader (:obj:`torch.utils.data.DataLoader`, optional): If None, the range test
                 will only use the training metric. When given a data loader, the model is
                 evaluated after each iteration on that dataset and the evaluation metric
                 is used. Note that in this mode the test takes significantly longer but
                 generally produces more precise results. (default: None)
-            start_lr (float, optional): The starting learning rate for the range test.
+            start_lr (:obj:`float`, optional): The starting learning rate for the range test.
                 If None, uses the learning rate from the optimizer. (default: None)
-            end_lr (float, optional): The maximum learning rate to test. (default: 10)
-            step_mode (str, optional): One of the available learning rate policies,
+            end_lr (:obj:`float`, optional): The maximum learning rate to test. (default: 10)
+            step_mode (:obj:`str`, optional): One of the available learning rate policies,
                 linear or exponential ('linear', 'exp'). (default: 'exp')
-            smooth_f (float, optional): The metric smoothing factor within the [0, 1]
+            smooth_f (:obj:`float`, optional): The metric smoothing factor within the [0, 1]
                 interval. Disabled if set to 0, otherwise the metric is smoothed using
                 exponential smoothing. (default: 0.0)
-            diverge_th (int, optional): The test is stopped when the metric surpasses the
+            diverge_th (:obj:`int`, optional): The test is stopped when the metric surpasses the
                 threshold: diverge_th * best_metric. To disable, set it to 0. (default: 5)
         """
 
@@ -293,13 +293,13 @@ class LRFinder:
         """Plots the learning rate range test.
 
         Args:
-            skip_start (int, optional): Number of batches to trim from the start.
+            skip_start (:obj:`int`, optional): Number of batches to trim from the start.
                 (default: 10)
-            skip_end (int, optional): Number of batches to trim from the end.
+            skip_end (:obj:`int`, optional): Number of batches to trim from the end.
                 (default: 5)
-            log_lr (bool, optional): True to plot the learning rate in a logarithmic
+            log_lr (:obj:`bool`, optional): True to plot the learning rate in a logarithmic
                 scale; otherwise, plotted in a linear scale. (default: True)
-            show_lr (float, optional): Is set, will add vertical line to visualize
+            show_lr (:obj:`float`, optional): Is set, will add vertical line to visualize
                 specified learning rate. (default: None)
         """
 
@@ -325,12 +325,12 @@ class LRFinder:
 class LinearLR(_LRScheduler):
     """Linearly increases the learning rate between two boundaries over a number of
     iterations.
-    
+
     Args:
         optimizer (torch.optim.Optimizer): Optimizer.
         end_lr (float): The final learning rate.
         iterations (int): The number of iterations over which the test occurs.
-        last_epoch (int, optional): The index of last epoch. (default: -1)
+        last_epoch (:obj:`int`, optional): The index of last epoch. (default: -1)
     """
 
     def __init__(self, optimizer, end_lr, iterations, last_epoch=-1):
@@ -352,7 +352,7 @@ class ExponentialLR(_LRScheduler):
         optimizer (torch.optim.Optimizer): Optimizer.
         end_lr (float): The final learning rate.
         iterations (int): The number of iterations/epochs over which the test occurs.
-        last_epoch (int, optional): The index of last epoch. (default: -1)
+        last_epoch (:obj:`int`, optional): The index of last epoch. (default: -1)
     """
 
     def __init__(self, optimizer, end_lr, iterations, last_epoch=-1):
