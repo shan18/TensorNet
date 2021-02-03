@@ -49,11 +49,11 @@ def ssim_loss(data_range=1.0, size_average=True, channel=1):
     """Create SSIM Loss.
 
     Args:
-        data_range (float or int, optional): Value range of input
+        data_range (:obj:`float` or :obj:`int`, optional): Value range of input
             images (usually 1.0 or 255). (default: 255)
-        size_average (bool, optional): If size_average=True, ssim
+        size_average (:obj:`bool`, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
-        channel (int, optional): input channels (default: 1)
+        channel (:obj:`int`, optional): input channels (default: 1)
 
     Returns:
         SSIM loss function
@@ -67,11 +67,11 @@ def ms_ssim_loss(data_range=1.0, size_average=True, channel=1):
     """Create MS-SSIM Loss.
 
     Args:
-        data_range (float or int, optional): Value range of input
+        data_range (:obj:`float` or :obj:`int`, optional): Value range of input
             images (usually 1.0 or 255). (default: 1.0)
-        size_average (bool, optional): If size_average=True, ssim
+        size_average (:obj:`bool`, optional): If size_average=True, ssim
             of all images will be averaged as a scalar. (default: True)
-        channel (int, optional): input channels (default: 1)
+        channel (:obj:`int`, optional): input channels (default: 1)
 
     Returns:
         MS-SSIM loss function
@@ -85,11 +85,11 @@ def dice_loss(smooth=1):
     """Create Dice Loss.
 
     Args:
-        smooth (float, optional): Smoothing value. A larger
+        smooth (:obj:`float`, optional): Smoothing value. A larger
             smooth value (also known as Laplace smooth, or
             Additive smooth) can be used to avoid overfitting.
             (default: 1)
-    
+
     Returns:
         Dice loss function
     """
@@ -100,8 +100,8 @@ def bce_dice_loss(smooth=1e-6):
     """Create BCEDice Loss.
 
     Args:
-        smooth (float, optional): Smoothing value.
-    
+        smooth (:obj:`float`, optional): Smoothing value.
+
     Returns:
         BCEDice loss function
     """

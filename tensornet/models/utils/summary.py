@@ -4,20 +4,28 @@
 
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-
-from collections import OrderedDict
 import numpy as np
 
+from collections import OrderedDict
+from typing import Union, Tuple, List, Dict, Optional
 
-def summary(model, input_size, batch_size=-1, dtypes=None):
+
+__all__ = ['summary']
+
+
+def summary(
+    model: torch.nn.Module,
+    input_size: Union[Tuple[int], List[int], Dict[str, Union[tuple, list]]],
+    batch_size: int = -1,
+    dtypes: Optional = None
+):
     """Display model summary.
 
     Args:
         model (torch.nn.Module): Model instance.
-        input_size (tuple, list or dict): Input size for the model.
-        batch_size (int, optional): Batch size. (default: -1)
-        dtypes (optional): Model input data types. (default: None)
+        input_size (:obj:`tuple`, :obj:`list` or :obj:`dict`): Input size for the model.
+        batch_size (:obj:`int`, optional): Batch size. (default: -1)
+        dtypes (optional): Model input data types.
     """
     device = next(model.parameters()).device
     result, _ = summary_string(
@@ -26,21 +34,27 @@ def summary(model, input_size, batch_size=-1, dtypes=None):
     print(result)
 
 
-def summary_string(model, input_size, device, batch_size=-1, dtypes=None):
+def summary_string(
+    model: torch.nn.Module,
+    input_size: Union[Tuple[int], List[int], Dict[str, Union[tuple, list]]],
+    device: torch.device,
+    batch_size: int = -1,
+    dtypes: Optional = None
+):
     """Prepare model summary.
 
     Args:
         model (torch.nn.Module): Model instance.
-        input_size (tuple, list or dict): Input size for the model.
-        device (torch.device, optional): Device.
-        batch_size (int, optional): Batch size. (default: -1)
-        dtypes (optional): Model input data types. (default: None)
-    
+        input_size (:obj:`tuple`, :obj:`list` or :obj:`dict`): Input size for the model.
+        device (:obj:`torch.device`, optional): Device.
+        batch_size (:obj:`int`, optional): Batch size. (default: -1)
+        dtypes (optional): Model input data types.
+
     Returns:
         Model summary and number of parameters in the model
     """
-    if dtypes == None:
-        dtypes = [torch.FloatTensor]*len(input_size)
+    if dtypes is None:
+        dtypes = [torch.FloatTensor] * len(input_size)
 
     summary_str = ''
 

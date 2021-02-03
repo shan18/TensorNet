@@ -1,17 +1,25 @@
+import torch
 import torch.optim as optim
 
 
-def sgd(model, learning_rate=0.01, momentum=0, dampening=0, l2_factor=0.0, nesterov=False):
+def sgd(
+    model: torch.nn.Module,
+    learning_rate: float = 0.01,
+    momentum: int = 0,
+    dampening: int = 0,
+    l2_factor: float = 0.0,
+    nesterov: bool = False,
+):
     """Create optimizer.
 
     Args:
         model (torch.nn.Module): Model Instance.
-        learning_rate (float, optional): Learning rate for the optimizer. (default: 0.01)
-        momentum (float, optional): Momentum factor. (default: 0)
-        dampening (float, optional): Dampening for momentum. (default: 0)
-        l2_factor (float, optional): Factor for L2 regularization. (default: 0)
-        nesterov (bool, optional): Enables nesterov momentum. (default: False)
-    
+        learning_rate (:obj:`float`, optional): Learning rate for the optimizer. (default: 0.01)
+        momentum (:obj:`float`, optional): Momentum factor. (default: 0)
+        dampening (:obj:`float`, optional): Dampening for momentum. (default: 0)
+        l2_factor (:obj:`float`, optional): Factor for L2 regularization. (default: 0)
+        nesterov (:obj:`bool`, optional): Enables nesterov momentum. (default: False)
+
     Returns:
         SGD optimizer.
     """

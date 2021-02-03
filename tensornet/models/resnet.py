@@ -1,3 +1,6 @@
+# The code here is taken from https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+
+
 import torch
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional

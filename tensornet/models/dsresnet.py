@@ -2,12 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from typing import Optional
 from .base_model import BaseModel
+
+
+__all__ = ['DSResNet']
 
 
 class DoubleConvBlock(BaseModel):
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int):
         super(DoubleConvBlock, self).__init__()
 
         self.conv1 = nn.Sequential(
@@ -26,8 +30,8 @@ class DoubleConvBlock(BaseModel):
             nn.ReLU(),
             nn.BatchNorm2d(out_channels),
         )
-    
-    def forward(self, x):
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.conv1(x)
         out = self.conv2(out)
         return out
@@ -35,7 +39,7 @@ class DoubleConvBlock(BaseModel):
 
 class ResEncoderBlock(BaseModel):
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int):
         super(ResEncoderBlock, self).__init__()
 
         self.double_conv = DoubleConvBlock(
@@ -45,8 +49,8 @@ class ResEncoderBlock(BaseModel):
             in_channels, out_channels, kernel_size=1
         )
         self.down = nn.MaxPool2d(2)
-    
-    def forward(self, x):
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         identity = self.skip_conv(x)
         out = self.double_conv(x)
         out = out + identity
@@ -55,7 +59,7 @@ class ResEncoderBlock(BaseModel):
 
 class ResDecoderBlock(BaseModel):
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int):
         super(ResDecoderBlock, self).__init__()
 
         self.transition_conv = nn.Sequential(
@@ -75,7 +79,9 @@ class ResDecoderBlock(BaseModel):
             in_channels, out_channels
         )
 
-    def forward(self, x, encoder_input, skip_input=None):
+    def forward(
+        self, x: torch.Tensor, encoder_input: torch.Tensor, skip_input: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
         # Transition
         x = self.transition_conv(x)
         x = F.interpolate(
@@ -139,7 +145,7 @@ class DSResNet(BaseModel):
         self.D1 = ResDecoderBlock(32, 16)
         self.D0 = nn.Conv2d(16, 1, kernel_size=1)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # bg
         b1_down, b1 = self.b1(x['bg'])
         b2_down, b2 = self.b2(b1_down)
