@@ -1,22 +1,18 @@
 import torch
 import torch.nn.functional as F
+from typing import Tuple, Optional
 
 
 class GradCAM:
     """Calculate GradCAM salinecy map.
 
     Args:
-        input: Input image with shape of (1, 3, H, W)
-        class_idx (int, optional): Class index for calculating GradCAM.
-            If not specified, the class index that makes the highest model
-            prediction score will be used. (default: None)
-
-    Returns:
-        mask: Saliency map of the same spatial dimension with input
-        logit: Model output
+        model (torch.nn.Module): A model instance.
+        layer_name (str): Name of the layer in model for which the
+            map will be calculated.
     """
 
-    def __init__(self, model, layer_name):
+    def __init__(self, model: torch.nn.Module, layer_name: str):
         self.model = model
         self.layer_name = layer_name
         self._target_layer()
@@ -32,7 +28,7 @@ class GradCAM:
 
         self.target_layer.register_forward_hook(forward_hook)
         self.target_layer.register_backward_hook(backward_hook)
-    
+
     def _target_layer(self):
         layer_num = int(self.layer_name.lstrip('layer'))
         if layer_num == 1:
@@ -45,11 +41,12 @@ class GradCAM:
             self.target_layer = self.model.layer4
 
     def saliency_map_size(self, *input_size):
+        """Returns the shape of the saliency map."""
         device = next(self.model.parameters()).device
         self.model(torch.zeros(1, 3, *input_size, device=device))
         return self.activations['value'].shape[2:]
 
-    def forward(self, input, class_idx=None, retain_graph=False):
+    def _forward(self, input, class_idx=None, retain_graph=False):
         b, c, h, w = input.size()
 
         logit = self.model(input)
@@ -68,7 +65,7 @@ class GradCAM:
         # alpha = F.relu(gradients.view(b, k, -1)).mean(2)
         weights = alpha.view(b, k, 1, 1)
 
-        saliency_map = (weights*activations).sum(1, keepdim=True)
+        saliency_map = (weights * activations).sum(1, keepdim=True)
         saliency_map = F.relu(saliency_map)
         saliency_map = F.upsample(saliency_map, size=(h, w), mode='bilinear', align_corners=False)
         saliency_map_min, saliency_map_max = saliency_map.min(), saliency_map.max()
@@ -76,5 +73,20 @@ class GradCAM:
 
         return saliency_map, logit
 
-    def __call__(self, input, class_idx=None, retain_graph=False):
-        return self.forward(input, class_idx, retain_graph)
+    def __call__(
+        self, input: tuple, class_idx: Optional[int] = None, retain_graph: bool = False
+    ) -> Tuple[torch.Tensor]:
+        """
+        Args:
+            input (tuple): Input image with shape of (1, 3, H, W)
+            class_idx (:obj:`int`, optional): Class index for calculating GradCAM.
+                If not specified, the class index that makes the highest model
+                prediction score will be used.
+
+        Returns:
+            2-element tuple containing
+
+            - (*torch.tensor*): saliency map of the same spatial dimension with input.
+            - (*torch.tensor*): model output.
+        """
+        return self._forward(input, class_idx, retain_graph)

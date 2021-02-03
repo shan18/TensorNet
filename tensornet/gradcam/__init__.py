@@ -3,4 +3,7 @@
 
 from .gradcam import GradCAM
 from .gradcam_pp import GradCAMPP
-from .visual import *
+from .visual import GradCAMView, visualize_cam
+
+
+__all__ = ['GradCAM', 'GradCAMPP', 'GradCAMView', 'visualize_cam']

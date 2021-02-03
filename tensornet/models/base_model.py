@@ -7,6 +7,7 @@ from typing import Tuple
 
 
 class BaseModel(nn.Module):
+    """This is the parent class for all the models that are to be created using the library."""
 
     def __init__(self):
         """This function instantiates all the model layers."""

@@ -1,23 +1,27 @@
 import cv2
 import torch
+import numpy as np
 
 import matplotlib.pyplot as plt
 
 from tensornet.gradcam.gradcam import GradCAM
 from tensornet.gradcam.gradcam_pp import GradCAMPP
 from tensornet.data.utils import to_numpy, unnormalize
+from typing import Tuple, List, Dict, Union, Optional
 
 
-def visualize_cam(mask, img, alpha=1.0):
+def visualize_cam(mask: torch.Tensor, img: torch.Tensor, alpha: float = 1.0) -> Tuple[torch.Tensor]:
     """Make heatmap from mask and synthesize GradCAM result image using heatmap and img.
 
     Args:
         mask (torch.tensor): mask shape of (1, 1, H, W) and each element has value in range [0, 1]
         img (torch.tensor): img shape of (1, 3, H, W) and each pixel value is in range [0, 1]
-    Returns:
 
-        heatmap (torch.tensor): heatmap img shape of (3, H, W)
-        result (torch.tensor): synthesized GradCAM result of same shape with heatmap.
+    Returns:
+        2-element tuple containing
+
+        - (*torch.tensor*): heatmap img shape of (3, H, W)
+        - (*torch.tensor*): synthesized GradCAM result of same shape with heatmap.
     """
 
     heatmap = (255 * mask.squeeze()).type(torch.uint8).cpu().numpy()
@@ -33,17 +37,20 @@ def visualize_cam(mask, img, alpha=1.0):
 
 
 class GradCAMView:
+    """Create GradCAM and GradCAM++.
 
-    def __init__(self, model, layers, device, mean, std):
-        """Instantiate GradCAM and GradCAM++.
+    Args:
+        model (torch.nn.Module): Trained model.
+        layers (list): List of layers to show GradCAM on.
+        device (:obj:`str` or :obj:`torch.device`): GPU or CPU.
+        mean (:obj:`float` or :obj:`tuple`): Mean of the dataset.
+        std (:obj:`float` or :obj:`tuple`): Standard Deviation of the dataset.
+    """
 
-        Args:
-            model (torch.nn.Module): Trained model.
-            layers (list): List of layers to show GradCAM on.
-            device (str or torch.device): GPU or CPU.
-            mean (float or tuple): Mean of the dataset.
-            std (float or tuple): Standard Deviation of the dataset.
-        """
+    def __init__(
+        self, model: torch.nn.Module, layers: List[str], device: Union[str, torch.device],
+        mean: Union[float, tuple], std: Union[float, tuple]
+    ):
         self.model = model
         self.layers = layers
         self.device = device
@@ -59,35 +66,37 @@ class GradCAMView:
         self.views = []
 
     def _gradcam(self):
-        """ Initialize GradCAM instance. """
+        """Initialize GradCAM instance."""
         self.gradcam = {}
         for layer in self.layers:
             self.gradcam[layer] = GradCAM(self.model, layer)
-    
+
     def _gradcam_pp(self):
-        """ Initialize GradCAM++ instance. """
+        """Initialize GradCAM++ instance."""
         self.gradcam_pp = {}
         for layer in self.layers:
             self.gradcam_pp[layer] = GradCAMPP(self.model, layer)
-    
+
     def switch_mode(self):
-        """ Switch between GradCAM and GradCAM++. """
+        """Switch between GradCAM and GradCAM++."""
         if self.grad == self.gradcam:
             print('Mode switched to GradCAM++.')
             self.grad = self.gradcam_pp.copy()
         else:
             print('Mode switched to GradCAM.')
             self.grad = self.gradcam.copy()
-    
-    def _cam_image(self, norm_image, class_idx=None):
+
+    def _cam_image(
+        self, norm_image: torch.Tensor, class_idx: Optional[int] = None
+    ) -> Dict[str, Union[np.ndarray, Dict[str, np.ndarray]]]:
         """Get CAM for an image.
 
         Args:
             norm_image (torch.Tensor): Normalized image.
-            class_idx (int, optional): Class index for calculating GradCAM.
+            class_idx (:obj:`int`, optional): Class index for calculating GradCAM.
                 If not specified, the class index that makes the highest model
-                prediction score will be used. (default: None)
-        
+                prediction score will be used.
+
         Returns:
             Dictionary containing unnormalized image, heatmap and CAM result.
         """
@@ -106,8 +115,8 @@ class GradCAMView:
             'heatmap': heatmap,
             'result': result
         }
-    
-    def cam(self, norm_img_class_list):
+
+    def cam(self, norm_img_class_list: List[Union[Dict[str, Union[torch.Tensor, int]], torch.Tensor]]):
         """Get CAM for a list of images.
 
         Args:
@@ -124,8 +133,10 @@ class GradCAMView:
             if type(norm_image_class) == dict:
                 class_idx, norm_image = norm_image_class['class'], norm_image_class['image']
             self.views.append(self._cam_image(norm_image, class_idx=class_idx))
-    
-    def __call__(self, norm_img_class_list):
+
+    def __call__(
+        self, norm_img_class_list: List[Union[Dict[str, Union[torch.Tensor, int]], torch.Tensor]]
+    ) -> List[Dict[str, Union[np.ndarray, Dict[str, np.ndarray]]]]:
         """Get GradCAM for a list of images.
 
         Args:

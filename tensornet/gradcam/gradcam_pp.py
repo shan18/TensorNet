@@ -7,18 +7,11 @@ from tensornet.gradcam.gradcam import GradCAM
 class GradCAMPP(GradCAM):
     """Calculate GradCAM++ salinecy map.
 
-    Args:
-        input: Input image with shape of (1, 3, H, W)
-        class_idx (int, optional): Class index for calculating GradCAM.
-            If not specified, the class index that makes the highest model
-            prediction score will be used. (default: None)
-
-    Returns:
-        mask: saliency map of the same spatial dimension with input
-        logit: model output
+    It inherits the `GradCAM` class so
+    the definition for all the methods is exactly the same as its parent class.
     """
 
-    def forward(self, input, class_idx=None, retain_graph=False):
+    def _forward(self, input, class_idx=None, retain_graph=False):
         b, c, h, w = input.size()
 
         logit = self.model(input)
