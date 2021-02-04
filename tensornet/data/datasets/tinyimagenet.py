@@ -1,6 +1,5 @@
 import os
 import csv
-import random
 import requests
 import zipfile
 import numpy as np
@@ -14,18 +13,18 @@ from tensornet.data.datasets.dataset import BaseDataset
 
 class TinyImageNet(BaseDataset):
     """Load Tiny ImageNet Dataset."""
-    
+
     def _download(self, train=True, apply_transform=True):
         """Download dataset.
 
         Args:
-            train (bool, optional): True for training data.
+            train (:obj:`bool`, optional): True for training data.
                 (default: True)
-            apply_transform (bool, optional): True if transform
+            apply_transform (:obj:`bool`, optional): True if transform
                 is to be applied on the dataset. (default: True)
-        
+
         Returns:
-            Downloaded dataset.
+            (`TinyImageNetDataset`): Downloaded dataset.
         """
         if not self.path.endswith('tinyimagenet'):
             self.path = os.path.join(self.path, 'tinyimagenet')
@@ -35,45 +34,45 @@ class TinyImageNet(BaseDataset):
         return TinyImageNetDataset(
             self.path, train=train, train_split=self.train_split, transform=transform
         )
-    
+
     def _get_image_size(self):
         """Return shape of data i.e. image size."""
         return (3, 64, 64)
-    
+
     def _get_classes(self):
         """Return list of classes in the dataset."""
         return self.train_data.classes
-    
+
     def _get_mean(self):
         """Returns mean of the entire dataset."""
         return (0.4914, 0.4822, 0.4465)
-    
+
     def _get_std(self):
         """Returns standard deviation of the entire dataset."""
         return (0.2023, 0.1994, 0.2010)
 
 
 class TinyImageNetDataset(Dataset):
-    """Create Tiny ImageNet Dataset."""
+    """Create Tiny ImageNet Dataset.
+
+    Args:
+        path (str): Path where dataset will be downloaded.
+        train (:obj:`bool`, optional): True for training data. (default: True)
+        train_split (:obj:`float`, optional): Fraction of dataset to assign
+            for training. (default: 0.7)
+        download (:obj:`bool`, optional): If True, dataset will be downloaded.
+            (default: True)
+        random_seed (:obj:`int`, optional): Random seed value. This is required
+            for splitting the data into training and validation datasets.
+            (default: 1)
+        transform (optional): Transformations to apply on the dataset.
+            (default: None)
+    """
 
     def __init__(self, path, train=True, train_split=0.7, download=True, random_seed=1, transform=None):
-        """Initializes the dataset for loading.
-
-        Args:
-            path (str): Path where dataset will be downloaded.
-            train (bool, optional): True for training data. (default: True)
-            train_split (float, optional): Fraction of dataset to assign
-                for training. (default: 0.7)
-            download (bool, optional): If True, dataset will be downloaded.
-                (default: True)
-            random_seed (int, optional): Random seed value. This is required
-                for splitting the data into training and validation datasets.
-                (default: 1)
-            transform (optional): Transformations to apply on the dataset.
-                (default: None)
-        """
+        """Initializes the dataset for loading."""
         super(TinyImageNetDataset, self).__init__()
-        
+
         self.path = path
         self.train = train
         self.train_split = train_split
@@ -94,28 +93,28 @@ class TinyImageNetDataset(Dataset):
 
         split_idx = int(len(self._image_indices) * train_split)
         self._image_indices = self._image_indices[:split_idx] if train else self._image_indices[split_idx:]
-    
+
     def __len__(self):
         """Returns length of the dataset."""
         return len(self._image_indices)
-    
+
     def __getitem__(self, index):
         """Fetch an item from the dataset.
 
         Args:
             index (int): Index of the item to fetch.
-        
+
         Returns:
             An image and its corresponding label.
         """
         image_index = self._image_indices[index]
-        
+
         image = self.data[image_index]
         if not self.transform is None:
             image = self.transform(image)
-        
+
         return image, self.targets[image_index]
-    
+
     def __repr__(self):
         """Representation string for the dataset object."""
         head = 'Dataset TinyImageNet'
@@ -127,24 +126,24 @@ class TinyImageNetDataset(Dataset):
             body += [repr(self.transforms)]
         lines = [head] + [' ' * 4 + line for line in body]
         return '\n'.join(lines)
-    
+
     def _validate_params(self):
         """Validate input parameters."""
         if self.train_split > 1:
             raise ValueError('train_split must be less than 1')
-    
+
     @property
     def classes(self):
         """List of classes present in the dataset."""
         return tuple(x[1]['name'] for x in sorted(
             self._class_ids.items(), key=lambda y: y[1]['id']
         ))
-    
+
     def _get_class_map(self):
         """Create a mapping from class id to the class name."""
         with open(os.path.join(self.path, 'wnids.txt')) as f:
             class_ids = {x[:-1]: '' for x in f.readlines()}
-        
+
         with open(os.path.join(self.path, 'words.txt')) as f:
             class_id = 0
             for line in csv.reader(f, delimiter='\t'):
@@ -155,15 +154,15 @@ class TinyImageNetDataset(Dataset):
                         'id': class_id
                     }
                     class_id += 1
-        
+
         return class_ids
-    
+
     def _load_image(self, image_path):
         """Load an image from the dataset.
 
         Args:
             image_path (str): Path of the image.
-        
+
         Returns:
             PIL object of the image.
         """
@@ -174,7 +173,7 @@ class TinyImageNetDataset(Dataset):
             image = np.array(image)
             image = np.stack((image,) * 3, axis=-1)
             image = Image.fromarray(image.astype('uint8'), 'RGB')
-        
+
         return image
 
     def _load_data(self):
@@ -191,7 +190,7 @@ class TinyImageNetDataset(Dataset):
                         self._load_image(os.path.join(train_images_path, image))
                     )
                     targets.append(self._class_ids[class_dir]['id'])
-        
+
         # Fetch val dir images
         val_path = os.path.join(self.path, 'val')
         val_images_path = os.path.join(val_path, 'images')
@@ -201,9 +200,9 @@ class TinyImageNetDataset(Dataset):
                     self._load_image(os.path.join(val_images_path, line[0]))
                 )
                 targets.append(self._class_ids[line[1]]['id'])
-        
+
         return data, targets
-    
+
     def download(self):
         """Download the data if it does not exist."""
         if not os.path.exists(self.path):

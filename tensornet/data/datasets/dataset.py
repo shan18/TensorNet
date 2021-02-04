@@ -1,13 +1,49 @@
 import os
-import numpy as np
-import torch
 
 from tensornet.data.processing import Transformations, data_loader
 from tensornet.data.utils import unnormalize, normalize
 
 
 class BaseDataset:
-    """Loads a dataset."""
+    """Loads a dataset.
+
+    Args:
+        train_batch_size (:obj:`int`, optional): Number of images to consider
+            in each batch in train set. (default: 0)
+        val_batch_size (:obj:`int`, optional): Number of images to consider
+            in each batch in validation set. (default: 0)
+        cuda (:obj:`bool`, optional): True is GPU is available. (default: False)
+        num_workers (:obj:`int`, optional): How many subprocesses to use for
+            data loading. (default: 0)
+        path (:obj:`str`, optional): Path where dataset will be downloaded. If
+            no path provided, data will be downloaded in a pre-defined
+            directory.
+        train_split (:obj:`float`, optional): Fraction of dataset to assign
+            for training. This parameter will not work for MNIST and
+            CIFAR-10 datasets. (default: 0.7)
+        resize (:obj:`tuple`, optional): Resize the input to the given height and
+            width. (default: (0, 0))
+        padding (:obj:`tuple`, optional): Pad the image if the image size is less
+            than the specified dimensions (height, width). (default: (0, 0))
+        crop (:obj:`tuple`, optional): Randomly crop the image with the specified
+            dimensions (height, width). (default: (0, 0))
+        horizontal_flip_prob (:obj:`float`, optional): Probability of an image
+            being horizontally flipped. (default: 0)
+        vertical_flip_prob (:obj:`float`, optional): Probability of an image
+            being vertically flipped. (default: 0)
+        rotate_prob (:obj:`float`, optional): Probability of an image being rotated.
+            (default: 0)
+        rotate_degree (:obj:`float`, optional): Angle of rotation for image
+            augmentation. (default: 0)
+        cutout_prob (:obj:`float`, optional): Probability that cutout will be
+            performed. (default: 0)
+        cutout_dim (:obj:`tuple`, optional): Dimensions of the cutout box
+            (height, width). (default: (8, 8))
+        hue_saturation_prob (:obj:`float`, optional): Probability of randomly changing hue,
+            saturation and value of the input image. (default: 0)
+        contrast_prob (:obj:`float`, optional): Randomly changing contrast of the input image.
+            (default: 0)
+    """
 
     def __init__(
         self, train_batch_size=1, val_batch_size=1, cuda=False,
@@ -16,46 +52,8 @@ class BaseDataset:
         gaussian_blur_prob=0.0, rotate_degree=0.0, cutout_prob=0.0,
         cutout_dim=(8, 8), hue_saturation_prob=0.0, contrast_prob=0.0
     ):
-        """Initializes the dataset for loading.
+        """Initializes the dataset for loading."""
 
-        Args:
-            train_batch_size (int, optional): Number of images to consider
-                in each batch in train set. (default: 0)
-            val_batch_size (int, optional): Number of images to consider
-                in each batch in validation set. (default: 0)
-            cuda (bool, optional): True is GPU is available. (default: False)
-            num_workers (int, optional): How many subprocesses to use for
-                data loading. (default: 0)
-            path (str, optional): Path where dataset will be downloaded. If
-                no path provided, data will be downloaded in a pre-defined
-                directory. (default: None)
-            train_split (float, optional): Fraction of dataset to assign
-                for training. This parameter will not work for MNIST and
-                CIFAR-10 datasets. (default: 0.7)
-            resize (tuple, optional): Resize the input to the given height and
-                width. (default: (0, 0))
-            padding (tuple, optional): Pad the image if the image size is less
-                than the specified dimensions (height, width). (default: (0, 0))
-            crop (tuple, optional): Randomly crop the image with the specified
-                dimensions (height, width). (default: (0, 0))
-            horizontal_flip_prob (float, optional): Probability of an image
-                being horizontally flipped. (default: 0)
-            vertical_flip_prob (float, optional): Probability of an image
-                being vertically flipped. (default: 0)
-            rotate_prob (float, optional): Probability of an image being rotated.
-                (default: 0)
-            rotate_degree (float, optional): Angle of rotation for image
-                augmentation. (default: 0)
-            cutout_prob (float, optional): Probability that cutout will be
-                performed. (default: 0)
-            cutout_dim (tuple, optional): Dimensions of the cutout box
-                (height, width). (default: (8, 8))
-            hue_saturation_prob (float, optional): Probability of randomly changing hue,
-                saturation and value of the input image. (default: 0)
-            contrast_prob (float, optional): Randomly changing contrast of the input image.
-                (default: 0)
-        """
-        
         self.cuda = cuda
         self.num_workers = num_workers
         self.path = path
@@ -80,7 +78,7 @@ class BaseDataset:
         self.cutout_dim = cutout_dim
         self.hue_saturation_prob = hue_saturation_prob
         self.contrast_prob = contrast_prob
-        
+
         # Get dataset statistics
         self.image_size = self._get_image_size()
         self.mean = self._get_mean()
@@ -88,7 +86,7 @@ class BaseDataset:
 
         # Get data
         self._split_data()
-    
+
     def _split_data(self):
         """Split data into training and validation set."""
 
@@ -100,16 +98,16 @@ class BaseDataset:
         # Set validation data
         self.val_transform = self._transform(train=False)
         self.val_data = self._download(train=False)
-    
+
     def _transform(self, train=True, data_type=None, normalize=True):
         """Define data transformations
-        
+
         Args:
             train (bool, optional): If True, download training data
                 else download the test data. (default: True)
             data_type (str, optional): Type of image. Required only when
                 dataset has multiple types of images. (default: None)
-        
+
         Returns:
             Returns data transforms based on the training mode.
         """
@@ -140,7 +138,7 @@ class BaseDataset:
             args['contrast_prob'] = self.contrast_prob
 
         return Transformations(**args)
-    
+
     def _download(self, train=True, apply_transform=True):
         """Download dataset.
 
@@ -149,7 +147,7 @@ class BaseDataset:
                 (default: True)
             apply_transform (bool, optional): True if transform
                 is to be applied on the dataset. (default: True)
-        
+
         Returns:
             Downloaded dataset.
         """
@@ -158,71 +156,77 @@ class BaseDataset:
     def _get_image_size(self):
         """Return shape of data i.e. image size."""
         raise NotImplementedError
-    
+
     def _get_classes(self):
         """Get list of classes present in the dataset."""
         return None
-    
+
     def _get_mean(self):
         """Returns mean of the entire dataset."""
         return (0.5, 0.5, 0.5)
-    
+
     def _get_std(self):
         """Returns standard deviation of the entire dataset."""
         return (0.5, 0.5, 0.5)
-    
+
     def data(self, train=True):
         """Return data based on train mode.
 
         Args:
-            train (bool, optional): True for training data. (default: True)
-        
+            train (:obj:`bool`, optional): True for training data. (default: True)
+
         Returns:
             Training or validation data and targets.
         """
         data = self.train_data if train else self.val_data
         return data.data, data.targets
-    
+
     def unnormalize(self, image, transpose=False, data_type=None):
         """Un-normalize a given image.
 
         Args:
-            image (numpy.ndarray or torch.Tensor): A ndarray
+            image (:obj:`numpy.ndarray` or :obj:`torch.Tensor`): A ndarray
                 or tensor. If tensor, it should be in CPU.
-            transpose (bool, optional): If True, transposed output will
+            transpose (:obj:`bool`, optional): If True, transposed output will
                 be returned. This param is effective only when image is
                 a tensor. If tensor, the output will have channel number
                 as the last dim. (default: False)
-            data_type (str, optional): Type of image. Required only when
+            data_type (:obj:`str`, optional): Type of image. Required only when
                 dataset has multiple types of images. (default: None)
+
+        Returns:
+            (`numpy.ndarray` or `torch.Tensor`): Unnormalized image
         """
         mean = self.mean if data_type is None else self.mean[data_type]
         std = self.std if data_type is None else self.std[data_type]
         return unnormalize(image, mean, std, transpose)
-    
+
     def normalize(self, image, transpose=False, data_type=None):
         """Normalize a given image.
 
         Args:
-            image (numpy.ndarray or torch.Tensor): A ndarray
+            image (:obj:`numpy.ndarray` or :obj:`torch.Tensor`): A ndarray
                 or tensor. If tensor, it should be in CPU.
-            transpose (bool, optional): If True, transposed output will
+            transpose (:obj:`bool`, optional): If True, transposed output will
                 be returned. This param is effective only when image is
                 a tensor. If tensor, the output will have channel number
                 as the last dim. (default: False)
-            data_type (str, optional): Type of image. Required only when
+            data_type (:obj:`str`, optional): Type of image. Required only when
                 dataset has multiple types of images. (default: None)
+
+        Returns:
+            (`numpy.ndarray` or `torch.Tensor`): Normalized image
         """
         mean = self.mean if data_type is None else self.mean[data_type]
         std = self.std if data_type is None else self.std[data_type]
         return normalize(image, mean, std, transpose)
-    
+
     def loader(self, train=True):
         """Create data loader.
 
         Args:
-            train (bool, optional): True for training data. (default: True)
-        
+            train (:obj:`bool`, optional): True for training data. (default: True)
+
         Returns:
             Dataloader instance.
         """
