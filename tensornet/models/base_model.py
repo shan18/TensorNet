@@ -3,34 +3,37 @@ import torch.nn as nn
 
 from .utils.summary import summary as model_summary
 from tensornet.engine.learner import Learner
+from typing import Tuple
 
 
 class BaseModel(nn.Module):
+    """This is the parent class for all the models that are to be
+    created using ``TensorNet``."""
 
     def __init__(self):
         """This function instantiates all the model layers."""
         super(BaseModel, self).__init__()
         self.learner = None
-    
-    def forward(self, x):
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """This function defines the forward pass of the model.
 
         Args:
-            x: Input.
-        
+            x (torch.Tensor): Input.
+
         Returns:
-            Model output.
+            (*torch.Tensor*): Model output.
         """
         raise NotImplementedError
 
-    def summary(self, input_size):
+    def summary(self, input_size: Tuple[int]):
         """Generates model summary.
 
         Args:
             input_size (tuple): Size of input to the model.
         """
         model_summary(self, input_size)
-    
+
     def create_learner(
         self, train_loader, optimizer, criterion, device='cpu',
         epochs=1, l1_factor=0.0, val_loader=None, callbacks=None, metrics=None,
@@ -42,19 +45,15 @@ class BaseModel(nn.Module):
             train_loader (torch.utils.data.DataLoader): Training data loader.
             optimizer (torch.optim): Optimizer for the model.
             criterion (torch.nn): Loss Function.
-            device (str or torch.device): Device where the data
-                will be loaded.
-            epochs (int, optional): Numbers of epochs to train the model. (default: 1)
-            l1_factor (float, optional): L1 regularization factor. (default: 0)
-            val_loader (torch.utils.data.DataLoader, optional): Validation data
-                loader. (default: None)
-            callbacks (list, optional): List of callbacks to be used during training.
-                (default: None)
-            track (str, optional): Can be set to either 'epoch' or 'batch' and will
-                store the changes in loss and accuracy for each batch
-                or the entire epoch respectively. (default: 'epoch')
-            metrics (list of str, optional): List of names of the metrics for model
-                evaluation. (default: None)
+            device (:obj:`str` or :obj:`torch.device`): Device where the data will be loaded.
+            epochs (:obj:`int`, optional): Numbers of epochs to train the model. (default: 1)
+            l1_factor (:obj:`float`, optional): L1 regularization factor. (default: 0)
+            val_loader (:obj:`torch.utils.data.DataLoader`, optional): Validation data loader.
+            callbacks (:obj:`list`, optional): List of callbacks to be used during training.
+            track (:obj:`str`, optional): Can be set to either `'epoch'` or `'batch'` and will store the
+                changes in loss and accuracy for each batch or the entire epoch respectively.
+                (default: *'epoch'*)
+            metrics (:obj:`list`, optional): List of names of the metrics for model evaluation.
         """
         self.learner = Learner(
             train_loader, optimizer, criterion, device=device, epochs=epochs,
@@ -62,38 +61,37 @@ class BaseModel(nn.Module):
             activate_loss_logits=activate_loss_logits, record_train=record_train
         )
         self.learner.set_model(self)
-    
-    def set_learner(self, learner):
+
+    def set_learner(self, learner: Learner):
         """Assign a learner object to the model.
 
         Args:
-            learner (Learner): Learner object.
+            learner (:obj:`Learner`): Learner object.
         """
         self.learner = learner
         self.learner.set_model(self)
 
-    def fit(self, *args, start_epoch=1, **kwargs):
+    def fit(self, *args, start_epoch: int = 1, **kwargs):
         """Train the model.
 
         Args:
-            start_epoch (int, optional): Start epoch for training.
-                (default: 1)
+            start_epoch (:obj:`int`, optional): Start epoch for training. (default: 1)
         """
 
         # Check learner
         if self.learner is None:
             print('Creating a learner object.')
             self.create_learner(*args, **kwargs)
-        
+
         # Train Model
         self.learner.fit(start_epoch=start_epoch)
-    
-    def save(self, filepath, **kwargs):
+
+    def save(self, filepath: str, **kwargs):
         """Save the model.
 
         Args:
             filepath (str): File in which the model will be saved.
-            **kwargs (optional): Additional parameters to save with the model.
+            **kwargs: Additional parameters to save with the model.
         """
         if self.learner is None:
             raise ValueError('Cannot save un-trained model.')
@@ -103,15 +101,16 @@ class BaseModel(nn.Module):
             'optimizer_state_dict': self.learner.optimizer.state_dict(),
             **kwargs
         }, filepath)
-    
-    def load(self, filepath):
-        """Load the model.
+
+    def load(self, filepath: str) -> dict:
+        """Load the model and return the additional parameters saved in
+        in the checkpoint file.
 
         Args:
             filepath (str): File in which the model is be saved.
-        
+
         Returns:
-            Parameters saved inside the checkpoint file.
+            (*dict*): Parameters saved inside the checkpoint file.
         """
         checkpoint = torch.load(filepath)
         self.load_state_dict(checkpoint['model_state_dict'])

@@ -1,26 +1,22 @@
 import os
-import numpy as np
-from PIL import Image
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid, save_image
 
-from tensornet.data.utils import to_numpy
-
 
 class TensorBoard:
+    """Setup Tensorboard.
+
+    Args:
+        logdir (:obj:`str`, optional): Save directory location.
+            Default is runs/CURRENT_DATETIME_HOSTNAME,
+            which changes after each run.
+        images (:obj:`torch.Tensor`, optional): Batch of images for
+            which predictions will be done.
+        device (:obj:`str` or :obj:`torch.device`, optional): Device where the data
+            will be loaded. (default='cpu')
+    """
 
     def __init__(self, logdir=None, images=None, device='cpu'):
-        """Setup Tensorboard.
-
-        Args:
-            logdir (str, optional): Save directory location.
-                Default is runs/CURRENT_DATETIME_HOSTNAME,
-                which changes after each run. (default: None)
-            images (torch.Tensor, optional): Batch of images for
-                which predictions will be done. (default: None)
-            device (str or torch.device, optional): Device where the data
-                will be loaded. (default='cpu')
-        """
         self.logdir = logdir
         self.images = images
         self.device = device
@@ -32,7 +28,7 @@ class TensorBoard:
 
         if not (self.device == 'cpu' or self.images is None):
             self._move_images()
-    
+
     def _move_images(self):
         """Move images to a device."""
         if isinstance(self.images, dict):
@@ -45,7 +41,7 @@ class TensorBoard:
             self.images = images
         else:
             self.images = self.images.to(self.device)
-    
+
     def write_model(self, model):
         """Write graph to tensorboard.
 
@@ -54,8 +50,14 @@ class TensorBoard:
         """
         if not self.images is None:
             self.writer.add_graph(model, self.images)
-    
+
     def write_image(self, image, image_name):
+        """Write image to tensorboard.
+
+        Args:
+            image (torch.Tensor): Image tensor.
+            image_name (str, optional): Name of the image to be written.
+        """
         image = image.detach().cpu()
         image_grid = make_grid(image)
 
@@ -64,33 +66,32 @@ class TensorBoard:
         with open(
             os.path.join(self.img_dir, f'{image_name}.jpeg'),
             'wb'
-        ) as fimg: # Save predictions
+        ) as fimg:  # Save predictions
             save_image(image_grid, fimg)
-    
+
     def write_images(self, model, activation_fn=None, image_name=None):
         """Write images to tensorboard.
 
         Args:
             model (torch.nn.Module): Model Instance.
             activation_fn (optional): Activation function to apply on
-                model outputs. (default: None)
+                model outputs.
             image_name (str, optional): Name of the image to be written.
-                (default: None)
         """
         if image_name is None:
             image_name = 'model_predictions'
-        
+
         model.eval()
         predictions = model(self.images)
         if not activation_fn is None:
             predictions = activation_fn(predictions)
-        
+
         if isinstance(predictions, (tuple, list)):
             for idx, prediction in enumerate(predictions):
                 self.write_image(prediction, f'{idx}_{image_name}')
         else:
             self.write_image(predictions, image_name)
-    
+
     def write_scalar(self, scalar, value, step_value):
         """Write scalar metrics to tensorboard.
 

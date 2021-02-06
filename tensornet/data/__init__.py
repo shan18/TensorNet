@@ -1,1 +1,4 @@
-from .datasets import CIFAR10, MNIST, TinyImageNet, MODESTMuseum
+from .datasets import BaseDataset, MNIST, CIFAR10, TinyImageNet, MODESTMuseum
+
+
+__all__ = ['BaseDataset', 'MNIST', 'CIFAR10', 'TinyImageNet', 'MODESTMuseum']

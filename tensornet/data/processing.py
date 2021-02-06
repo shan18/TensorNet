@@ -14,32 +14,33 @@ class Transformations:
         mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), normalize=True, train=True
     ):
         """Create data transformation pipeline.
-        
+
         Args:
-            resize (tuple, optional): Resize the input to the given height and
+            resize (:obj:`tuple`, optional): Resize the input to the given height and
                 width. (default: (0, 0))
-            padding (tuple, optional): Pad the image if the image size is less
+            padding (:obj:`tuple`, optional): Pad the image if the image size is less
                 than the specified dimensions (height, width). (default= (0, 0))
-            crop (tuple, optional): Randomly crop the image with the specified
+            crop (:obj:`tuple`, optional): Randomly crop the image with the specified
                 dimensions (height, width). (default: (0, 0))
-            horizontal_flip_prob (float, optional): Probability of an image
+            horizontal_flip_prob (:obj:`float`, optional): Probability of an image
                 being horizontally flipped. (default: 0)
-            vertical_flip_prob (float, optional): Probability of an image
+            vertical_flip_prob (:obj:`float`, optional): Probability of an image
                 being vertically flipped. (default: 0)
-            rotate_prob (float, optional): Probability of an image being
+            rotate_prob (:obj:`float`, optional): Probability of an image being
                 rotated. (default: 0)
-            rotate_degree (float, optional): Angle of rotation for image
+            rotate_degree (:obj:`float`, optional): Angle of rotation for image
                 augmentation. (default: 0)
-            cutout_prob (float, optional): Probability that cutout will be
+            cutout_prob (:obj:`float`, optional): Probability that cutout will be
                 performed. (default: 0)
-            cutout_dim (tuple, optional): Dimensions of the cutout box (height, width).
+            cutout_dim (:obj:`tuple`, optional): Dimensions of the cutout box (height, width).
                 (default: (8, 8))
-            hue_saturation_prob (float, optional): Probability of randomly changing hue,
+            hue_saturation_prob (:obj:`float`, optional): Probability of randomly changing hue,
                 saturation and value of the input image. (default: 0)
-            contrast_prob (float, optional): Randomly changing contrast of the input image.
+            contrast_prob (:obj:`float`, optional): Randomly changing contrast of the input image.
                 (default: 0)
-            mean (float or tuple, optional): Dataset mean. (default: 0.5 for each channel)
-            std (float or tuple, optional): Dataset standard deviation. (default: 0.5 for each channel)
+            mean (:obj:`float` or :obj:`tuple`, optional): Dataset mean. (default: 0.5 for each channel)
+            std (:obj:`float` or :obj:`tuple`, optional): Dataset standard deviation.
+                (default: 0.5 for each channel)
         """
         transforms_list = []
 
@@ -82,22 +83,22 @@ class Transformations:
             transforms_list += [
                 A.Normalize(mean=mean, std=std, always_apply=True),
             ]
-        
+
         # convert the data to torch.FloatTensor
         transforms_list += [
             ToTensor()
         ]
 
         self.transform = A.Compose(transforms_list)
-    
+
     def __call__(self, image):
         """Process and image through the data transformation pipeline.
 
         Args:
             image: Image to process.
-        
+
         Returns:
-            Transformed image.
+            (*torch.Tensor*): Transformed image.
         """
         if not isinstance(image, np.ndarray):
             image = np.array(image)
@@ -112,16 +113,16 @@ def data_loader(data, shuffle=True, batch_size=1, num_workers=1, cuda=False):
 
     Args:
         data (torchvision.datasets): Downloaded dataset.
-        shuffle (bool, optional): If True, shuffle the dataset. 
+        shuffle (:obj:`bool`, optional): If True, shuffle the dataset.
             (default: True)
-        batch_size (int, optional): Number of images to considered
+        batch_size (:obj:`int`, optional): Number of images to considered
             in each batch. (default: 1)
-        num_workers (int, optional): How many subprocesses to use
+        num_workers (:obj:`int`, optional): How many subprocesses to use
             for data loading. (default: 1)
-        cuda (bool, optional): True is GPU is available. (default: False)
-    
+        cuda (:obj:`bool`, optional): True is GPU is available. (default: False)
+
     Returns:
-        DataLoader instance.
+        (*torch.utils.data.DataLoader*): DataLoader instance.
     """
 
     loader_args = {
@@ -133,7 +134,7 @@ def data_loader(data, shuffle=True, batch_size=1, num_workers=1, cuda=False):
     if cuda:
         loader_args['num_workers'] = num_workers
         loader_args['pin_memory'] = True
-    
+
     return torch.utils.data.DataLoader(data, **loader_args)
 
 
@@ -142,7 +143,7 @@ class InfiniteDataLoader:
 
     Args:
         data_loader (torch.utils.data.DataLoader): DataLoader object.
-        auto_reset (bool, optional): Create an infinite loop data loader.
+        auto_reset (:obj:`bool`, optional): Create an infinite loop data loader.
             (default: True)
     """
 
@@ -164,4 +165,5 @@ class InfiniteDataLoader:
         return data, target
 
     def get_batch(self):
+        """Load next batch from the dataset."""
         return next(self)

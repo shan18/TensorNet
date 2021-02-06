@@ -1,3 +1,6 @@
+# The code in this file is referenced from https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py
+
+
 from torch import nn
 from torch.hub import load_state_dict_from_url
 
@@ -22,7 +25,7 @@ def _make_divisible(v, divisor, min_value=None):
         v
         divisor
         min_value
-    
+
     Returns:
         new_v
     """
@@ -80,6 +83,21 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(BaseModel):
+    """MobileNet V2
+
+    `Note`: This model inherits the ``BaseModel`` class.
+
+    Args:
+        num_classes (:obj:`int`, optional): Number of classes. (default: 1000)
+        width_mult (:obj:`float`, optional): Width multiplier - adjusts number of channels in
+            each layer by this amount. (default: 1.0)
+        inverted_residual_setting (optional): Network structure.
+        round_nearest (:obj:`int`, optional): Round the number of channels in each layer to be
+            a multiple of this number. Set to 1 to turn off rounding. (default: 8)
+        block (optional): Module specifying inverted residual building block for mobilenet.
+        norm_layer (optional): Module specifying the normalization layer to use.
+    """
+
     def __init__(
         self,
         num_classes=1000,
@@ -89,20 +107,6 @@ class MobileNetV2(BaseModel):
         block=None,
         norm_layer=None
     ):
-        """MobileNet V2 main class
-
-        Args:
-            num_classes (int, optional): Number of classes. (default: 1000)
-            width_mult (float, optional): Width multiplier - adjusts number of channels in
-                each layer by this amount. (default: 1.0)
-            inverted_residual_setting (optional): Network structure. (default: None)
-            round_nearest (int, optional): Round the number of channels in each layer to be
-                a multiple of this number. Set to 1 to turn off rounding. (default: 8)
-            block (optional): Module specifying inverted residual building block for mobilenet.
-                (default: None)
-            norm_layer (optional): Module specifying the normalization layer to use.
-                (default: None)
-        """
         super(MobileNetV2, self).__init__()
 
         if block is None:
@@ -129,7 +133,7 @@ class MobileNetV2(BaseModel):
         # only check the first element, assuming user knows t,c,n,s are required
         if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
             raise ValueError(
-                "inverted_residual_setting should be non-empty or a 4-element list, got {}".format(inverted_residual_setting)
+                f'inverted_residual_setting should be non-empty or a 4-element list, got {inverted_residual_setting}'
             )
 
         # building first layer
@@ -141,7 +145,9 @@ class MobileNetV2(BaseModel):
             output_channel = _make_divisible(c * width_mult, round_nearest)
             for i in range(n):
                 stride = s if i == 0 else 1
-                features.append(block(input_channel, output_channel, stride, expand_ratio=t, norm_layer=norm_layer))
+                features.append(
+                    block(input_channel, output_channel, stride, expand_ratio=t, norm_layer=norm_layer)
+                )
                 input_channel = output_channel
         # building last several layers
         features.append(ConvBNReLU(input_channel, self.last_channel, kernel_size=1, norm_layer=norm_layer))
