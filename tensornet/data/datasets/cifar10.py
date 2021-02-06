@@ -4,7 +4,10 @@ from tensornet.data.datasets.dataset import BaseDataset
 
 
 class CIFAR10(BaseDataset):
-    """Load CIFAR-10 Dataset."""
+    """CIFAR-10 Dataset.
+
+    `Note`: This dataset inherits the ``BaseDataset`` class.
+    """
 
     def _download(self, train=True, apply_transform=True):
         """Download dataset.

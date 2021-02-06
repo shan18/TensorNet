@@ -155,6 +155,22 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(BaseModel):
+    """Residual-Net (ResNet)
+
+    `Note`: This model inherits the ``BaseModel`` class.
+
+    Args:
+        block (:obj:`BasicBlock` or :obj:`Bottleneck`): Type of block to use for the model.
+        layers (list): Number of blocks for each layer.
+        num_classes (:obj:`int`, optional): Number of classes. (default: 1000)
+        zero_init_residual (:obj:`bool`, optional): Make residual branch behave like an
+            identity. (default: False)
+        groups (:obj:`int`, optional): Number of groups per block. (default: 1)
+        width_per_group (:obj:`int`, optional): Width for each group. (default: 64)
+        replace_stride_with_dilation (:obj:`list` , optional): Replace stride with dilation
+            for each layer.
+        norm_layer (:obj:`nn.Module` , optional): Normalization Layer.
+    """
 
     def __init__(
         self,

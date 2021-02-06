@@ -6,7 +6,7 @@ from .rmse import RMSELoss
 
 
 def cross_entropy_loss():
-    """Create Cross Entropy Loss.
+    """Cross Entropy Loss.
     The loss automatically applies the softmax activation
     function on the prediction input.
 
@@ -17,7 +17,7 @@ def cross_entropy_loss():
 
 
 def bce_loss():
-    """Create Binary Cross Entropy Loss.
+    """Binary Cross Entropy Loss.
     The loss automatically applies the sigmoid activation
     function on the prediction input.
 
@@ -28,7 +28,7 @@ def bce_loss():
 
 
 def mse_loss():
-    """Create Mean Squared Error Loss.
+    """Mean Squared Error Loss.
 
     Returns:
         Mean squared error loss function
@@ -37,7 +37,7 @@ def mse_loss():
 
 
 def rmse_loss(smooth=1e-6):
-    """Create Root Mean Squared Error Loss.
+    """Root Mean Squared Error Loss.
 
     Returns:
         Root mean squared error loss function
@@ -45,8 +45,35 @@ def rmse_loss(smooth=1e-6):
     return RMSELoss(smooth=1e-6)
 
 
+def dice_loss(smooth=1):
+    """Dice Loss.
+
+    Args:
+        smooth (:obj:`float`, optional): Smoothing value. A larger
+            smooth value (also known as Laplace smooth, or
+            Additive smooth) can be used to avoid overfitting.
+            (default: 1)
+
+    Returns:
+        Dice loss function
+    """
+    return DiceLoss(smooth=smooth)
+
+
+def bce_dice_loss(smooth=1e-6):
+    """BCE Dice Loss.
+
+    Args:
+        smooth (:obj:`float`, optional): Smoothing value.
+
+    Returns:
+        BCE Dice loss function
+    """
+    return BCEDiceLoss(smooth=smooth)
+
+
 def ssim_loss(data_range=1.0, size_average=True, channel=1):
-    """Create SSIM Loss.
+    """SSIM Loss.
 
     Args:
         data_range (:obj:`float` or :obj:`int`, optional): Value range of input
@@ -64,7 +91,7 @@ def ssim_loss(data_range=1.0, size_average=True, channel=1):
 
 
 def ms_ssim_loss(data_range=1.0, size_average=True, channel=1):
-    """Create MS-SSIM Loss.
+    """MS-SSIM Loss.
 
     Args:
         data_range (:obj:`float` or :obj:`int`, optional): Value range of input
@@ -79,30 +106,3 @@ def ms_ssim_loss(data_range=1.0, size_average=True, channel=1):
     return MSSSIMLoss(
         data_range=data_range, size_average=size_average, channel=channel
     )
-
-
-def dice_loss(smooth=1):
-    """Create Dice Loss.
-
-    Args:
-        smooth (:obj:`float`, optional): Smoothing value. A larger
-            smooth value (also known as Laplace smooth, or
-            Additive smooth) can be used to avoid overfitting.
-            (default: 1)
-
-    Returns:
-        Dice loss function
-    """
-    return DiceLoss(smooth=smooth)
-
-
-def bce_dice_loss(smooth=1e-6):
-    """Create BCEDice Loss.
-
-    Args:
-        smooth (:obj:`float`, optional): Smoothing value.
-
-    Returns:
-        BCEDice loss function
-    """
-    return BCEDiceLoss(smooth=smooth)

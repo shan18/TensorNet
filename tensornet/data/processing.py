@@ -165,4 +165,5 @@ class InfiniteDataLoader:
         return data, target
 
     def get_batch(self):
+        """Load next batch from the dataset."""
         return next(self)

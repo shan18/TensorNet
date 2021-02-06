@@ -3,7 +3,7 @@ from typing import Tuple
 
 
 def set_seed(seed: int, cuda: bool):
-    """Setting the seed makes the results reproducible.
+    """Set seed to make the results reproducible.
 
     Args:
         seed (int): Random seed value.

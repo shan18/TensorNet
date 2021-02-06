@@ -102,6 +102,13 @@ class ResDecoderBlock(BaseModel):
 
 
 class DSResNet(BaseModel):
+    """A U-Net Inspired model for Monocular Depth Estimation and Image Segmentation.
+
+    For information check the `Depth-Estimation-Segmentation repository
+    <https://github.com/shan18/Depth-Estimation-Segmentation>`_.
+
+    `Note`: This model inherits the ``BaseModel`` class.
+    """
 
     def __init__(self):
         super(DSResNet, self).__init__()

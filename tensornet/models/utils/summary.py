@@ -10,9 +10,6 @@ from collections import OrderedDict
 from typing import Union, Tuple, List, Dict, Optional
 
 
-__all__ = ['summary']
-
-
 def summary(
     model: torch.nn.Module,
     input_size: Union[Tuple[int], List[int], Dict[str, Union[tuple, list]]],

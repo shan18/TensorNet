@@ -8,7 +8,10 @@ from tensornet.data.datasets.dataset import BaseDataset
 
 
 class MODESTMuseum(BaseDataset):
-    """Load MODEST Museum Dataset."""
+    """MODEST Museum Dataset.
+
+    `Note`: This dataset inherits the ``BaseDataset`` class.
+    """
 
     def _split_data(self):
         """Split data into training and validation set."""

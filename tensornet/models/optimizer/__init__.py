@@ -10,7 +10,7 @@ def sgd(
     l2_factor: float = 0.0,
     nesterov: bool = False,
 ):
-    """Create optimizer.
+    """SGD optimizer.
 
     Args:
         model (torch.nn.Module): Model Instance.
