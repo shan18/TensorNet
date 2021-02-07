@@ -5,6 +5,9 @@ TensorNet Documentation
 
 TensorNet is a high-level deep learning library built on top of PyTorch.
 
+Installation
+------------
+
 To install and use TensorNet all you have to do is:
 
 .. code-block:: bash
@@ -30,3 +33,8 @@ If you want to get the latest version of the code before it is released on PyPI 
    source/engine.ops.regularizer
    source/gradcam
    source/utils
+
+Contact/Getting Help
+--------------------
+
+If you need any help or want to report a bug, raise an `issue <https://github.com/shan18/TensorNet/issues>`_ in the repo.
