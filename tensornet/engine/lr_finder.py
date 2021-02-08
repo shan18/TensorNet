@@ -281,8 +281,8 @@ class LRFinder:
             return self.learner.train_losses[-1]
         elif self.metric == 'accuracy':
             if validation:
-                return self.learner.val_metrics[0][-1] / 100
-            return self.learner.train_metrics[0][-1] / 100
+                return self.learner.val_metrics[0][self.metric][-1] / 100
+            return self.learner.train_metrics[0][self.metric][-1] / 100
 
     def _display_metric_value(self, value):
         if self.metric == 'accuracy':

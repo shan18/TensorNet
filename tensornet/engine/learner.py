@@ -23,8 +23,13 @@ class Learner:
         l1_factor (:obj:`float`, optional): L1 regularization factor. (default: 0)
         val_loader (:obj:`torch.utils.data.DataLoader`, optional): Validation data loader.
         callbacks (:obj:`list`, optional): List of callbacks to be used during training.
-        metrics (:obj:`list` of :obj:`str`, optional): List of names of the metrics for model
+        metrics (:obj:`list`, optional): List of names of the metrics for model
             evaluation.
+
+            *Note*: If the model has multiple outputs, then this will be a nested list
+            where each individual sub-list will specify the metrics which are to be used for
+            evaluating each output respectively. In such cases, the model checkpoint will
+            consider only the metric of the first output for saving checkpoints.
         activate_loss_logits (:obj:`bool`, optional): If True, the logits will first pass
             through the `activate_logits` function before going to the criterion.
             (default: False)
@@ -169,7 +174,6 @@ class Learner:
                 diff = torch.div(diff, _label)
 
             return diff, valid_element_count
-
 
     def _rmse(self, label, prediction, idx=0):
         """Calculate Root Mean Square Error.
@@ -489,7 +493,6 @@ class Learner:
         """
         if not self.checkpoint is None:
             metric = None
-            params = {}
             if self.checkpoint.monitor == 'train_loss':
                 metric = self.train_losses[-1]
             elif self.checkpoint.monitor == 'val_loss':
@@ -497,11 +500,11 @@ class Learner:
             elif self.metrics:
                 if self.checkpoint.monitor.startswith('train_'):
                     if self.record_train:
-                        metric = self.train_metrics[
+                        metric = self.train_metrics[0][
                             self.checkpoint.monitor.split('train_')[-1]
                         ][-1]
                 else:
-                    metric = self.val_metrics[
+                    metric = self.val_metrics[0][
                         self.checkpoint.monitor.split('val_')[-1]
                     ][-1]
             else:

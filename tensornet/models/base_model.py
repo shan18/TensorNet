@@ -78,10 +78,8 @@ class BaseModel(nn.Module):
             start_epoch (:obj:`int`, optional): Start epoch for training. (default: 1)
         """
 
-        # Check learner
-        if self.learner is None:
-            print('Creating a learner object.')
-            self.create_learner(*args, **kwargs)
+        # Create learner object
+        self.create_learner(*args, **kwargs)
 
         # Train Model
         self.learner.fit(start_epoch=start_epoch)
