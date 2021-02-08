@@ -71,15 +71,36 @@ class BaseModel(nn.Module):
         self.learner = learner
         self.learner.set_model(self)
 
-    def fit(self, *args, start_epoch: int = 1, **kwargs):
+    def fit(
+        self, train_loader, optimizer, criterion, device='cpu', epochs=1,
+        l1_factor=0.0, val_loader=None, callbacks=None, metrics=None,
+        activate_loss_logits=False, record_train=True, start_epoch=1,
+    ):
         """Train the model.
 
         Args:
-            start_epoch (:obj:`int`, optional): Start epoch for training. (default: 1)
+            train_loader (torch.utils.data.DataLoader): Training data loader.
+            optimizer (torch.optim): Optimizer for the model.
+            criterion (torch.nn): Loss Function.
+            device (:obj:`str` or :obj:`torch.device`): Device where the data will be loaded.
+            epochs (:obj:`int`, optional): Numbers of epochs to train the model. (default: 1)
+            l1_factor (:obj:`float`, optional): L1 regularization factor. (default: 0)
+            val_loader (:obj:`torch.utils.data.DataLoader`, optional): Validation data loader.
+            callbacks (:obj:`list`, optional): List of callbacks to be used during training.
+            track (:obj:`str`, optional): Can be set to either `'epoch'` or `'batch'` and will store the
+                changes in loss and accuracy for each batch or the entire epoch respectively.
+                (default: *'epoch'*)
+            metrics (:obj:`list`, optional): List of names of the metrics for model evaluation.
+            start_epoch (:obj:`int`, optional): Starting epoch number to display during training.
+                (default: 1)
         """
 
         # Create learner object
-        self.create_learner(*args, **kwargs)
+        self.create_learner(
+            train_loader, optimizer, criterion, device=device, epochs=epochs, l1_factor=l1_factor,
+            val_loader=val_loader, callbacks=callbacks, metrics=metrics,
+            activate_loss_logits=activate_loss_logits, record_train=record_train,
+        )
 
         # Train Model
         self.learner.fit(start_epoch=start_epoch)
