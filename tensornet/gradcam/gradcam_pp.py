@@ -9,6 +9,9 @@ class GradCAMPP(GradCAM):
 
     It inherits the `GradCAM` class so
     the definition for all the methods is exactly the same as its parent class.
+
+    *Note*: The current implemenation supports only ResNet models. The class can
+    be extended to add support for other models.
     """
 
     def _forward(self, input, class_idx=None, retain_graph=False):

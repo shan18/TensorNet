@@ -6,6 +6,9 @@ from typing import Tuple, Optional
 class GradCAM:
     """Calculate GradCAM salinecy map.
 
+    *Note*: The current implemenation supports only ResNet models. The class can
+    be extended to add support for other models.
+
     Args:
         model (torch.nn.Module): A model instance.
         layer_name (str): Name of the layer in model for which the
