@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/tensornet_logo.png" alt="tensornet" />
+  <img src="https://github.com/shan18/TensorNet/blob/master/images/tensornet_logo.png" alt="tensornet" />
   <br />
   <br />
   <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
