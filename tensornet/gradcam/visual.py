@@ -39,6 +39,9 @@ def visualize_cam(mask: torch.Tensor, img: torch.Tensor, alpha: float = 1.0) -> 
 class GradCAMView:
     """Create GradCAM and GradCAM++.
 
+    *Note*: The current implemenation of `GradCAM` and `GradCAM++` supports only ResNet
+    models. The class can be extended to add support for other models.
+
     Args:
         model (torch.nn.Module): Trained model.
         layers (list): List of layers to show GradCAM on.
