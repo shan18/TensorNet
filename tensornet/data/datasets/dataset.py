@@ -31,8 +31,6 @@ class BaseDataset:
             being horizontally flipped. (default: 0)
         vertical_flip_prob (:obj:`float`, optional): Probability of an image
             being vertically flipped. (default: 0)
-        rotate_prob (:obj:`float`, optional): Probability of an image being rotated.
-            (default: 0)
         rotate_degree (:obj:`float`, optional): Angle of rotation for image
             augmentation. (default: 0)
         cutout_prob (:obj:`float`, optional): Probability that cutout will be
