@@ -74,7 +74,7 @@ class BaseModel(nn.Module):
     def fit(
         self, train_loader, optimizer, criterion, device='cpu', epochs=1,
         l1_factor=0.0, val_loader=None, callbacks=None, metrics=None,
-        activate_loss_logits=False, record_train=True, start_epoch=1,
+        activate_loss_logits=False, record_train=True, start_epoch=1, verbose=True,
     ):
         """Train the model.
 
@@ -91,8 +91,14 @@ class BaseModel(nn.Module):
                 changes in loss and accuracy for each batch or the entire epoch respectively.
                 (default: *'epoch'*)
             metrics (:obj:`list`, optional): List of names of the metrics for model evaluation.
+            record_train (:obj:`bool`, optional): If False, metrics will be calculated only
+                during validation. (default: True)
+            activate_loss_logits (:obj:`bool`, optional): If True, the logits will first pass
+                through the `activate_logits` function before going to the criterion.
+                (default: False)
             start_epoch (:obj:`int`, optional): Starting epoch number to display during training.
                 (default: 1)
+            verbose (:obj:`bool`, optional): Print loss and metrics. (default: True)
         """
 
         # Create learner object
@@ -103,7 +109,7 @@ class BaseModel(nn.Module):
         )
 
         # Train Model
-        self.learner.fit(start_epoch=start_epoch)
+        self.learner.fit(start_epoch=start_epoch, verbose=verbose)
 
     def save(self, filepath: str, **kwargs):
         """Save the model.
