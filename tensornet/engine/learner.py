@@ -1,6 +1,7 @@
 import math
 import time
 import torch
+from copy import deepcopy
 
 from tensornet.engine.ops.regularizer import l1
 from tensornet.engine.ops.checkpoint import ModelCheckpoint
@@ -60,7 +61,7 @@ class Learner:
         }
         self.checkpoint = None
         self.summary_writer = None
-        if not callbacks is None:
+        if callbacks is not None:
             self._setup_callbacks(callbacks)
 
         # Training
@@ -108,7 +109,7 @@ class Learner:
             model (torch.nn.Module): Model Instance.
         """
         self.model = model
-        if not self.summary_writer is None:
+        if self.summary_writer is not None:
             self.summary_writer.write_model(self.model)
 
     def _accuracy(self, label, prediction, idx=0):
@@ -184,7 +185,7 @@ class Learner:
         """
         diff = self._pred_label_diff(label, prediction)
         rmse = 0
-        if not diff is None:
+        if diff is not None:
             rmse = math.sqrt(torch.sum(torch.pow(diff[0], 2)) / diff[1])
 
         self.metrics[idx]['rmse']['num_steps'] += label.size(0)
@@ -202,7 +203,7 @@ class Learner:
         """
         diff = self._pred_label_diff(label, prediction)
         mae = 0
-        if not diff is None:
+        if diff is not None:
             mae = torch.sum(diff[0]).item() / diff[1]
 
         self.metrics[idx]['mae']['num_steps'] += label.size(0)
@@ -220,7 +221,7 @@ class Learner:
         """
         diff = self._pred_label_diff(label, prediction, rel=True)
         abs_rel = 0
-        if not diff is None:
+        if diff is not None:
             abs_rel = torch.sum(diff[0]).item() / diff[1]
 
         self.metrics[idx]['abs_rel']['num_steps'] += label.size(0)
@@ -407,23 +408,33 @@ class Learner:
 
         return loss.item()
 
-    def train_epoch(self):
-        """Run an epoch of model training."""
+    def train_epoch(self, verbose=True):
+        """Run an epoch of model training.
+
+        Args:
+            verbose (:obj:`bool`, optional): Print logs. (default: True)
+        """
 
         self.model.train()
-        pbar = ProgressBar(target=len(self.train_loader), width=8)
+        if verbose:
+            pbar = ProgressBar(target=len(self.train_loader), width=8)
+
         for batch_idx, data in enumerate(self.train_loader, 0):
             # Train a batch
             loss = self.train_batch(data)
 
             # Update Progress Bar
-            pbar_values = self._get_pbar_values(loss)
-            pbar.update(batch_idx, values=pbar_values)
+            if verbose:
+                pbar_values = self._get_pbar_values(loss)
+                pbar.update(batch_idx, values=pbar_values)
 
         # Update training history
         self.update_training_history(loss)
-        pbar_values = self._get_pbar_values(loss)
-        pbar.add(1, values=pbar_values)
+        if verbose:
+            pbar_values = self._get_pbar_values(loss)
+            pbar.add(1, values=pbar_values)
+
+        self._reset_metrics()
 
     def train_iterations(self):
         """Train model for the 'self.epochs' number of batches."""
@@ -444,32 +455,29 @@ class Learner:
 
         pbar.add(1, values=pbar_values)
 
-    def validate(self, verbose=True):
-        """Validate an epoch of model training.
+    def evaluate(self, loader, verbose=True, log_message='Evaluation'):
+        """Evaluate the model on a custom data loader.
 
         Args:
-            verbose (bool): Print validation loss and accuracy.
+            loader (torch.utils.data.DataLoader): Data loader.
+            verbose (:obj:`bool`, optional): Print loss and metrics. (default: True)
+            log_message (str): Prefix for the logs which are printed at the end.
         """
 
         start_time = time.time()
         self.model.eval()
-        val_loss = 0
-        correct = 0
+        eval_loss = 0
         with torch.no_grad():
-            for data in self.val_loader:
+            for data in loader:
                 inputs, targets = self.fetch_data(data)
                 output = self.model(inputs)  # Get trained model output
-                val_loss += self.calculate_criterion(output, targets, train=False).item()  # Sum up batch loss
+                eval_loss += self.calculate_criterion(
+                    output, targets, train=False
+                ).item()  # Sum up batch loss
                 self._calculate_metrics(targets, output)  # Calculate evaluation metrics
 
-        val_loss /= len(self.val_loader.dataset)
-        self.val_losses.append(val_loss)
-
-        for idx in range(len(self.metrics)):
-            for metric in self.metrics[idx]:
-                self.val_metrics[idx][metric].append(
-                    self.metrics[idx][metric]['value']
-                )
+        eval_loss /= len(loader.dataset)
+        eval_metrics = deepcopy(self.metrics)
         end_time = time.time()
 
         # Time spent during validation
@@ -478,12 +486,35 @@ class Learner:
         seconds = duration % 60
 
         if verbose:
-            log = f'Validation set (took {minutes} minutes, {seconds} seconds): Average loss: {val_loss:.4f}'
+            log = f'{log_message} (took {minutes} minutes, {seconds} seconds): Average loss: {eval_loss:.4f}'
             for idx in range(len(self.metrics)):
                 for metric in self.metrics[idx]:
                     log += f', {metric}: {self.metrics[idx][metric]["value"]}'
             log += '\n'
             print(log)
+
+        self._reset_metrics()
+
+        return eval_loss, eval_metrics
+
+    def validate(self, verbose=True):
+        """Validate an epoch of model training.
+
+        Args:
+            verbose (:obj:`bool`, optional): Print validation loss and metrics.
+                (default: True)
+        """
+        eval_loss, eval_metrics = self.evaluate(
+            self.val_loader, verbose=verbose, log_message='Validation set'
+        )
+
+        # Update validation logs
+        self.val_losses.append(eval_loss)
+        for idx in range(len(eval_metrics)):
+            for metric in eval_metrics[idx]:
+                self.val_metrics[idx][metric].append(
+                    eval_metrics[idx][metric]['value']
+                )
 
     def save_checkpoint(self, epoch=None):
         """Save model checkpoint.
@@ -491,7 +522,7 @@ class Learner:
         Args:
             epoch (:obj:`int`, optional): Current epoch number.
         """
-        if not self.checkpoint is None:
+        if self.checkpoint is not None:
             metric = None
             if self.checkpoint.monitor == 'train_loss':
                 metric = self.train_losses[-1]
@@ -522,7 +553,7 @@ class Learner:
                 written for model training else it
                 will be writtern for model validation.
         """
-        if not self.summary_writer is None:
+        if self.summary_writer is not None:
             if train:
                 mode = 'train'
 
@@ -548,28 +579,28 @@ class Learner:
                             info['value'], epoch
                         )
 
-    def fit(self, start_epoch=1):
+    def fit(self, start_epoch=1, verbose=True):
         """Perform model training.
 
         Args:
             start_epoch (:obj:`int`, optional): Start epoch for training.
                 (default: 1)
+            verbose (:obj:`bool`, optional): Print logs. (default: True)
         """
 
         self.reset_history()
         for epoch in range(start_epoch, start_epoch + self.epochs):
-            print(f'Epoch {epoch}:')
+            if verbose:
+                print(f'Epoch {epoch}:')
 
             # Train an epoch
-            self.train_epoch()
+            self.train_epoch(verbose=verbose)
             self.write_summary(epoch, True)
-            self._reset_metrics()
 
             # Validate the model
-            if not self.val_loader is None:
-                self.validate()
+            if self.val_loader is not None:
+                self.validate(verbose=verbose)
                 self.write_summary(epoch, False)
-                self._reset_metrics()
 
             # Save model checkpoint
             self.save_checkpoint(epoch)

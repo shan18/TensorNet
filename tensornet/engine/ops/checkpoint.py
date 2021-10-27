@@ -38,7 +38,7 @@ class ModelCheckpoint:
         # Set monitor quantity and mode
         self.monitor = monitor
         self._set_monitor_mode(mode)
-        if not best_value is None:
+        if best_value is not None:
             self.best = best_value
 
     def _set_monitor_mode(self, mode):
@@ -49,7 +49,7 @@ class ModelCheckpoint:
         """
 
         # Validate mode
-        if not mode in ['auto', 'min', 'max']:
+        if mode not in ['auto', 'min', 'max']:
             print('WARNING: Invalid mode given. Setting mode to auto.')
 
         # Set mode
@@ -101,7 +101,7 @@ class ModelCheckpoint:
 
             # Save model
             params = {self.monitor: current_value, **kwargs}
-            if not epoch is None:
+            if epoch is not None:
                 params['epoch'] = epoch
             model.save(save_path, **params)
 
