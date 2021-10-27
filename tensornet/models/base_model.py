@@ -118,12 +118,15 @@ class BaseModel(nn.Module):
             loader (torch.utils.data.DataLoader): Data loader.
             verbose (:obj:`bool`, optional): Print loss and metrics. (default: True)
             log_message (str): Prefix for the logs which are printed at the end.
+
+        Returns:
+            loss and metric values
         """
 
         if self.learner is None:
             raise ValueError('Cannot evaluate without a learner. Create and assign a learner object first.')
 
-        self.learner.evaluate(loader, verbose=verbose, log_message=log_message)
+        return self.learner.evaluate(loader, verbose=verbose, log_message=log_message)
 
     def save(self, filepath: str, **kwargs):
         """Save the model.
