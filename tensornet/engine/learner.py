@@ -1,6 +1,7 @@
 import math
 import time
 import torch
+from copy import deepcopy
 
 from tensornet.engine.ops.regularizer import l1
 from tensornet.engine.ops.checkpoint import ModelCheckpoint
@@ -433,6 +434,8 @@ class Learner:
             pbar_values = self._get_pbar_values(loss)
             pbar.add(1, values=pbar_values)
 
+        self._reset_metrics()
+
     def train_iterations(self):
         """Train model for the 'self.epochs' number of batches."""
 
@@ -456,28 +459,25 @@ class Learner:
         """Evaluate the model on a custom data loader.
 
         Args:
+            loader (torch.utils.data.DataLoader): Data loader.
             verbose (:obj:`bool`, optional): Print loss and metrics. (default: True)
             log_message (str): Prefix for the logs which are printed at the end.
         """
 
         start_time = time.time()
         self.model.eval()
-        val_loss = 0
+        eval_loss = 0
         with torch.no_grad():
             for data in loader:
                 inputs, targets = self.fetch_data(data)
                 output = self.model(inputs)  # Get trained model output
-                val_loss += self.calculate_criterion(output, targets, train=False).item()  # Sum up batch loss
+                eval_loss += self.calculate_criterion(
+                    output, targets, train=False
+                ).item()  # Sum up batch loss
                 self._calculate_metrics(targets, output)  # Calculate evaluation metrics
 
-        val_loss /= len(loader.dataset)
-        self.val_losses.append(val_loss)
-
-        for idx in range(len(self.metrics)):
-            for metric in self.metrics[idx]:
-                self.val_metrics[idx][metric].append(
-                    self.metrics[idx][metric]['value']
-                )
+        eval_loss /= len(loader.dataset)
+        eval_metrics = deepcopy(self.metrics)
         end_time = time.time()
 
         # Time spent during validation
@@ -486,12 +486,16 @@ class Learner:
         seconds = duration % 60
 
         if verbose:
-            log = f'{log_message} (took {minutes} minutes, {seconds} seconds): Average loss: {val_loss:.4f}'
+            log = f'{log_message} (took {minutes} minutes, {seconds} seconds): Average loss: {eval_loss:.4f}'
             for idx in range(len(self.metrics)):
                 for metric in self.metrics[idx]:
                     log += f', {metric}: {self.metrics[idx][metric]["value"]}'
             log += '\n'
             print(log)
+
+        self._reset_metrics()
+
+        return eval_loss, eval_metrics
 
     def validate(self, verbose=True):
         """Validate an epoch of model training.
@@ -500,7 +504,17 @@ class Learner:
             verbose (:obj:`bool`, optional): Print validation loss and metrics.
                 (default: True)
         """
-        self.evaluate(self.val_loader, verbose=verbose, log_message='Validation set')
+        eval_loss, eval_metrics = self.evaluate(
+            self.val_loader, verbose=verbose, log_message='Validation set'
+        )
+
+        # Update validation logs
+        self.val_losses.append(eval_loss)
+        for idx in range(len(eval_metrics)):
+            for metric in eval_metrics[idx]:
+                self.val_metrics[idx][metric].append(
+                    eval_metrics[idx][metric]['value']
+                )
 
     def save_checkpoint(self, epoch=None):
         """Save model checkpoint.
@@ -582,13 +596,11 @@ class Learner:
             # Train an epoch
             self.train_epoch(verbose=verbose)
             self.write_summary(epoch, True)
-            self._reset_metrics()
 
             # Validate the model
             if self.val_loader is not None:
                 self.validate(verbose=verbose)
                 self.write_summary(epoch, False)
-                self._reset_metrics()
 
             # Save model checkpoint
             self.save_checkpoint(epoch)

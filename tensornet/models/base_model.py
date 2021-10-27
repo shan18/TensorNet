@@ -111,6 +111,20 @@ class BaseModel(nn.Module):
         # Train Model
         self.learner.fit(start_epoch=start_epoch, verbose=verbose)
 
+    def evaluate(self, loader, verbose=True, log_message='Evaluation'):
+        """Evaluate the model on a custom data loader.
+
+        Args:
+            loader (torch.utils.data.DataLoader): Data loader.
+            verbose (:obj:`bool`, optional): Print loss and metrics. (default: True)
+            log_message (str): Prefix for the logs which are printed at the end.
+        """
+
+        if self.learner is None:
+            raise ValueError('Cannot evaluate without a learner. Create and assign a learner object first.')
+
+        self.learner.evaluate(loader, verbose=verbose, log_message=log_message)
+
     def save(self, filepath: str, **kwargs):
         """Save the model.
 
