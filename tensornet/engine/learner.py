@@ -58,6 +58,7 @@ class Learner:
             'step_lr': None,
             'lr_plateau': None,
             'one_cycle_policy': None,
+            'cyclic_lr': None,
         }
         self.checkpoint = None
         self.summary_writer = None
@@ -101,6 +102,8 @@ class Learner:
                     self.checkpoint = callback
             elif isinstance(callback, TensorBoard):
                 self.summary_writer = callback
+            elif isinstance(callback, torch.optim.lr_scheduler.CyclicLR):
+                self.lr_schedulers['cyclic_lr'] = callback
 
     def set_model(self, model):
         """Assign model to learner.
@@ -403,8 +406,12 @@ class Learner:
             self._calculate_metrics(targets, y_pred)
 
         # One Cycle Policy for learning rate
-        if not self.lr_schedulers['one_cycle_policy'] is None:
+        if self.lr_schedulers['one_cycle_policy'] is not None:
             self.lr_schedulers['one_cycle_policy'].step()
+
+        # Cyclic LR policy
+        if self.lr_schedulers['cyclic_lr'] is not None:
+            self.lr_schedulers['cyclic_lr'].step()
 
         return loss.item()
 
