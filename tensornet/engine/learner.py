@@ -443,24 +443,29 @@ class Learner:
 
         self._reset_metrics()
 
-    def train_iterations(self):
+    def train_iterations(self, verbose=True):
         """Train model for the 'self.epochs' number of batches."""
 
         self.model.train()
-        pbar = ProgressBar(target=self.epochs, width=8)
+
+        if verbose:
+            pbar = ProgressBar(target=self.epochs, width=8)
+
         iterator = InfiniteDataLoader(self.train_loader)
         for iteration in range(self.epochs):
             # Train a batch
             loss = self.train_batch(iterator.get_batch())
 
             # Update Progress Bar
-            pbar_values = self._get_pbar_values(loss)
-            pbar.update(iteration, values=pbar_values)
+            if verbose:
+                pbar_values = self._get_pbar_values(loss)
+                pbar.update(iteration, values=pbar_values)
 
             # Update training history
             self.update_training_history(loss)
 
-        pbar.add(1, values=pbar_values)
+        if verbose:
+            pbar.add(1, values=pbar_values)
 
     def evaluate(self, loader, verbose=True, log_message='Evaluation'):
         """Evaluate the model on a custom data loader.
