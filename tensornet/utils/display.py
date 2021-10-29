@@ -5,7 +5,8 @@ from typing import Union, List, Dict, Tuple, Optional
 
 def plot_metric(
     data: Union[List[float], Dict[str, List[float]]],
-    metric: str, legend_loc: str = 'lower right'
+    metric: str, title: str = None, size: Tuple[int] = (7, 5),
+    legend_font: int = 15, legend_loc: str = 'lower right'
 ):
     """Plot accuracy graph or loss graph.
 
@@ -15,9 +16,13 @@ def plot_metric(
             being a list of points to plot.
         metric (str): Metric name which is to be plotted. Can be either
             loss or accuracy.
+        title (:obj:`str`, optional): Title of the plot, if no title given then it is
+            determined from the x and y label.
+        size (:obj:`tuple`, optional): Size of the plot. (default: **'(7, 5)'**)
         legend_loc (:obj:`str`, optional): Location of the legend box in the plot.
             No legend will be plotted if there is only a single plot.
             (default: *'lower right'*)
+        legend_font (:obj:`int`, optional): Font size of the legend (default: *'15'*)
     """
 
     single_plot = True
@@ -25,7 +30,7 @@ def plot_metric(
         single_plot = False
 
     # Initialize a figure
-    fig = plt.figure(figsize=(7, 5))
+    fig = plt.figure(figsize=size)
 
     # Plot data
     if single_plot:
@@ -36,7 +41,9 @@ def plot_metric(
             plots.append(plt.plot(value)[0])
 
     # Set plot title
-    plt.title(f'{metric} Change')
+    if title is None:
+        title = f'{metric} Change'
+    plt.title(title)
 
     # Label axes
     plt.xlabel('Epoch')
@@ -47,11 +54,11 @@ def plot_metric(
             tuple(plots), tuple(data.keys()),
             loc=legend_loc,
             shadow=True,
-            prop={'size': 15}
+            prop={'size': legend_font}
         )
 
     # Save plot
-    fig.savefig(f'{"_".join(metric.split()).lower()}_change.png')
+    fig.savefig(f'{"_".join(title.split()).lower()}.png')
 
 
 def plot_predictions(
