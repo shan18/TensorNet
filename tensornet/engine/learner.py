@@ -589,16 +589,26 @@ class Learner:
                             info['value'], epoch
                         )
 
-    def fit(self, start_epoch=1, verbose=True):
+    def fit(self, start_epoch=1, epochs=None, reset=True, verbose=True):
         """Perform model training.
 
         Args:
             start_epoch (:obj:`int`, optional): Start epoch for training.
                 (default: 1)
+            epochs (:obj:`int`, optional): Numbers of epochs/iterations to
+                train the model for. If no value is given, the original
+                value given during initialization of learner will be used.
+            reset (:obj:`bool`, optional): Flag to indicate that training
+                is starting from scratch. (default: True)
             verbose (:obj:`bool`, optional): Print logs. (default: True)
         """
 
-        self.reset_history()
+        if reset:
+            self.reset_history()
+
+        if epochs is not None:
+            self.epochs = epochs
+
         for epoch in range(start_epoch, start_epoch + self.epochs):
             if verbose:
                 print(f'Epoch {epoch}:')

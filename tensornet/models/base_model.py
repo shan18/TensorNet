@@ -109,7 +109,13 @@ class BaseModel(nn.Module):
         )
 
         # Train Model
-        self.learner.fit(start_epoch=start_epoch, verbose=verbose)
+        self.learner.fit(start_epoch=start_epoch, epochs=epochs, verbose=verbose)
+
+    def rfit(self, start_epoch=1, epochs=None, verbose=True):
+        if self.learner is None:
+            raise ValueError('No learner initialized.')
+
+        self.learner.fit(start_epoch=start_epoch, epochs=epochs, reset=False, verbose=verbose)
 
     def evaluate(self, loader, verbose=True, log_message='Evaluation'):
         """Evaluate the model on a custom data loader.
