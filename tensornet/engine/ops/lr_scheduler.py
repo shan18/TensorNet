@@ -1,4 +1,4 @@
-from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, OneCycleLR
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, OneCycleLR, CyclicLR
 
 
 def step_lr(optimizer, step_size, gamma=0.1, last_epoch=-1):
@@ -66,4 +66,48 @@ def one_cycle_lr(
     return OneCycleLR(
         optimizer, max_lr, epochs=epochs, steps_per_epoch=steps_per_epoch,
         pct_start=pct_start, div_factor=div_factor, final_div_factor=final_div_factor
+    )
+
+
+def cyclic_lr(
+    optimizer, base_lr, max_lr, step_size_up=2000, step_size_down=None, mode='triangular', gamma=1.0,
+    scale_fn=None, scale_mode='cycle', cycle_momentum=True, base_momentum=0.8, max_momentum=0.9,
+    last_epoch=- 1, verbose=False
+):
+    """Create Cyclic LR Policy.
+
+    Args:
+        optimizer (torch.optim): Model optimizer.
+        base_lr (float): Lower learning rate boundary in the cycle.
+        max_lr (float): Upper learning rate boundary in the cycle.
+        step_size_up (int): Number of training iterations in the increasing half of a cycle.
+            (default: 2000)
+        step_size_down (int): Number of training iterations in the decreasing half of a cycle.
+            If step_size_down is None, it is set to step_size_up. (default: None)
+        mode (str): One of `triangular`, `triangular2`, `exp_range`. If scale_fn is not None,
+            this argument is ignored. (default: ‘triangular’)
+        gamma (float): Constant in ‘exp_range’ scaling function: gamma**(cycle iterations).
+            (default: 1.0)
+        scale_fn: Custom scaling policy defined by a single argument lambda function, where
+            0 <= scale_fn(x) <= 1 for all x >= 0. If specified, then ‘mode’ is ignored.
+            (default: None)
+        scale_mode (str): ‘cycle’, ‘iterations’. Defines whether scale_fn is evaluated on cycle
+            number or cycle iterations (training iterations since start of cycle).
+            (default: ‘cycle’)
+        cycle_momentum (bool): If True, momentum is cycled inversely to learning rate between
+            ‘base_momentum’ and ‘max_momentum’. (default: True)
+        base_momentum (float): Lower momentum boundaries in the cycle. (default: 0.8)
+        max_momentum (float): Upper momentum boundaries in the cycle. Functionally, it defines
+            the cycle amplitude (max_momentum - base_momentum). (default: 0.9)
+        last_epoch (int): The index of the last batch. This parameter is used when resuming a
+            training job.(default: -1)
+        verbose (bool): If True, prints a message to stdout for each update. (default: False)
+
+    Returns:
+        CyclicLR instance.
+    """
+    return CyclicLR(
+        optimizer, base_lr, max_lr, step_size_up=step_size_up, step_size_down=step_size_down,
+        mode=mode, gamma=gamma, scale_fn=scale_fn, scale_mode=scale_mode, cycle_momentum=cycle_momentum,
+        base_momentum=base_momentum, max_momentum=max_momentum, last_epoch=last_epoch, verbose=verbose
     )
