@@ -1,7 +1,5 @@
 # The code in this file is referenced from: https://github.com/pytorch/vision/blob/main/torchvision/models/squeezenet.py
 
-from typing import Any
-
 import torch
 from torch.hub import load_state_dict_from_url
 import torch.nn as nn
