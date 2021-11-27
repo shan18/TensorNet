@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/shan18/TensorNet/master/images/tensornet_logo.png" alt="tensornet" />
   <br />
   <br />
-  <img src="https://img.shields.io/badge/version-1.3.1-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.3.2-blue.svg" alt="Version">
   <a href='https://tensornet.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/tensornet/badge/?version=latest' alt='Documentation Status' /></a>
   <a href="https://github.com/shan18/TensorNet/blob/master/LICENSE"><img src="https://img.shields.io/apm/l/atomic-design-ui.svg?" alt="MIT License"></a>
   <br />
