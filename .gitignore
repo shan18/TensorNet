@@ -4,6 +4,7 @@
 __pycache__/
 *.pyc
 *.swp
+.DS_Store
 .cache/
 pypi_upload.sh
 notes/
