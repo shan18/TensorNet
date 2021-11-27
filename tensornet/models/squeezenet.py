@@ -1,3 +1,5 @@
+# The code in this file is referenced from: https://github.com/pytorch/vision/blob/main/torchvision/models/squeezenet.py
+
 from typing import Any
 
 import torch
@@ -9,11 +11,11 @@ from .base_model import BaseModel
 from .utils._utils import _log_api_usage_once, load_state_dict_from_url
 
 
-__all__ = ["SqueezeNet", "squeezenet1_0", "squeezenet1_1"]
+__all__ = ['SqueezeNet', 'squeezenet1_0', 'squeezenet1_1']
 
 model_urls = {
-    "squeezenet1_0": "https://download.pytorch.org/models/squeezenet1_0-b66bff10.pth",
-    "squeezenet1_1": "https://download.pytorch.org/models/squeezenet1_1-b8a52dc0.pth",
+    'squeezenet1_0': 'https://download.pytorch.org/models/squeezenet1_0-b66bff10.pth',
+    'squeezenet1_1': 'https://download.pytorch.org/models/squeezenet1_1-b8a52dc0.pth',
 }
 
 
@@ -36,11 +38,11 @@ class Fire(BaseModel):
 
 
 class SqueezeNet(BaseModel):
-    def __init__(self, version: str = "1_0", num_classes: int = 1000, dropout: float = 0.5) -> None:
+    def __init__(self, version: str = '1_0', num_classes: int = 1000, dropout: float = 0.5) -> None:
         super().__init__()
         _log_api_usage_once(self)
         self.num_classes = num_classes
-        if version == "1_0":
+        if version == '1_0':
             self.features = nn.Sequential(
                 nn.Conv2d(3, 96, kernel_size=7, stride=2),
                 nn.ReLU(inplace=True),
@@ -56,7 +58,7 @@ class SqueezeNet(BaseModel):
                 nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
                 Fire(512, 64, 256, 256),
             )
-        elif version == "1_1":
+        elif version == '1_1':
             self.features = nn.Sequential(
                 nn.Conv2d(3, 64, kernel_size=3, stride=2),
                 nn.ReLU(inplace=True),
@@ -76,7 +78,7 @@ class SqueezeNet(BaseModel):
             # FIXME: Is this needed? SqueezeNet should only be called from the
             # FIXME: squeezenet1_x() functions
             # FIXME: This checking is not done for the other models
-            raise ValueError(f"Unsupported SqueezeNet version {version}: 1_0 or 1_1 expected")
+            raise ValueError(f'Unsupported SqueezeNet version {version}: 1_0 or 1_1 expected')
 
         # Final convolution is initialized differently from the rest
         final_conv = nn.Conv2d(512, self.num_classes, kernel_size=1)
@@ -99,35 +101,47 @@ class SqueezeNet(BaseModel):
         return torch.flatten(x, 1)
 
 
-def _squeezenet(version: str, pretrained: bool, progress: bool, **kwargs: Any) -> SqueezeNet:
+def _squeezenet(version, pretrained, progress, **kwargs):
     model = SqueezeNet(version, **kwargs)
     if pretrained:
-        arch = "squeezenet" + version
+        arch = 'squeezenet' + version
         state_dict = load_state_dict_from_url(model_urls[arch], progress=progress)
         model.load_state_dict(state_dict)
     return model
 
 
-def squeezenet1_0(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> SqueezeNet:
-    r"""SqueezeNet model architecture from the `"SqueezeNet: AlexNet-level
+def squeezenet1_0(pretrained=False, progress=True, **kwargs):
+    """SqueezeNet model architecture from the `"SqueezeNet: AlexNet-level
     accuracy with 50x fewer parameters and <0.5MB model size"
     <https://arxiv.org/abs/1602.07360>`_ paper.
     The required minimum input size of the model is 21x21.
+
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
+        pretrained (bool, optional): If True, returns a model pre-trained
+            on ImageNet. (default: False)
+        progress (bool, optional): If True, displays a progress bar of the
+            download to stderr. (default: True)
+    
+    Returns:
+        SqueezeNet 1.0
     """
-    return _squeezenet("1_0", pretrained, progress, **kwargs)
+    return _squeezenet('1_0', pretrained, progress, **kwargs)
 
 
-def squeezenet1_1(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> SqueezeNet:
-    r"""SqueezeNet 1.1 model from the `official SqueezeNet repo
+def squeezenet1_1(pretrained=False, progress=True, **kwargs):
+    """SqueezeNet 1.1 model from the `official SqueezeNet repo
     <https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.1>`_.
     SqueezeNet 1.1 has 2.4x less computation and slightly fewer parameters
     than SqueezeNet 1.0, without sacrificing accuracy.
     The required minimum input size of the model is 17x17.
+    
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
+        pretrained (bool, optional): If True, returns a model pre-trained
+            on ImageNet. (default: False)
+        progress (bool, optional): If True, displays a progress bar of the
+            download to stderr. (default: True)
+    
+    Returns:
+        SqueezeNet 1.1
     """
-    return _squeezenet("1_1", pretrained, progress, **kwargs)
+    return _squeezenet('1_1', pretrained, progress, **kwargs)
